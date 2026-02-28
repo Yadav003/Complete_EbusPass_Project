@@ -1,4 +1,4 @@
-import express from 'express';
+import express,{urlencoded} from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
@@ -13,5 +13,10 @@ app.use(express.json());
 app.use(urlencoded({extended:true}));
 app.use(cookieParser());
 
+// import routes
 
-export default {app};
+// import userRoutes from './routes/user.routes.js'
+
+// app.use('/api/v1/users',userRoutes)
+
+export default app;
