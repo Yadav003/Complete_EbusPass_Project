@@ -1,12 +1,11 @@
 import mongoose, { Schema } from "mongoose";
+import bcrypt from "bcrypt";
 
 const userSchema = new Schema(
   {
-    username: {
+    fullname: {
       type: String,
       required: true,
-      unique: true,
-      lowercase: true,
       trim: true,
       index: true,
     },
@@ -17,11 +16,11 @@ const userSchema = new Schema(
       lowercase: true,
       trim: true,
     },
-    fullname: {
+    mobile: {
       type: String,
       required: true,
+      unique: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -35,5 +34,14 @@ const userSchema = new Schema(
     timestamps: true,
   },
 );
+
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  this.password = await bcrypt.hash(this.password, 10);
+});
+
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 
 export const User = mongoose.model("User", userSchema);
