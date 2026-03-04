@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { authService } from '@/services/auth.service';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   mobile: string;
+  role: 'student' | 'admin';
+}
+
+interface StoredUser {
+  id: string;
+  name: string;
+  email: string;
+  mobile: string;
+  password: string;
   role: 'student' | 'admin';
 }
 
@@ -67,8 +77,8 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 1000));
     
-    const users = JSON.parse(localStorage.getItem('ebuspass_users') || '[]');
-    const foundUser = users.find((u: any) => u.email === email && u.password === password);
+    const users: StoredUser[] = JSON.parse(localStorage.getItem('ebuspass_users') || '[]');
+    const foundUser = users.find((u) => u.email === email && u.password === password);
     
     if (foundUser) {
       const userData: User = {
@@ -86,32 +96,26 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const register = async (data: { name: string; email: string; mobile: string; password: string }): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const users = JSON.parse(localStorage.getItem('ebuspass_users') || '[]');
-    const exists = users.find((u: any) => u.email === data.email);
-    
-    if (exists) return false;
-    
-    const newUser = {
-      id: `user_${Date.now()}`,
-      ...data,
-      role: 'student'
-    };
-    
-    users.push(newUser);
-    localStorage.setItem('ebuspass_users', JSON.stringify(users));
-    
-    const userData: User = {
-      id: newUser.id,
-      name: newUser.name,
-      email: newUser.email,
-      mobile: newUser.mobile,
-      role: 'student'
-    };
-    setUser(userData);
-    localStorage.setItem('ebuspass_user', JSON.stringify(userData));
-    return true;
+    try {
+      const registeredUser = await authService.register({
+        fullname: data.name,
+        email: data.email,
+        mobile: data.mobile,
+        password: data.password,
+      });
+      const userData: User = {
+        id: registeredUser._id,
+        name: registeredUser.fullname,
+        email: registeredUser.email,
+        mobile: registeredUser.mobile,
+        role: registeredUser.role,
+      };
+      setUser(userData);
+      localStorage.setItem('ebuspass_user', JSON.stringify(userData));
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
