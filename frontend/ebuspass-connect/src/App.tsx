@@ -20,14 +20,15 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 'student' | 'admin' }) => {
+const ProtectedRoute = ({ children, role }: { children: React.ReactNode; role?: 'admin' }) => {
   const { user, isAuthenticated } = useAuth();
   
   if (!isAuthenticated) {
     return <Navigate to={role === 'admin' ? '/admin/login' : '/login'} replace />;
   }
   
-  if (role && user?.role !== role) {
+  // Only enforce role check for admin routes
+  if (role === 'admin' && user?.role !== 'admin') {
     return <Navigate to="/" replace />;
   }
   
@@ -40,8 +41,8 @@ const AppRoutes = () => {
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="/dashboard" element={<ProtectedRoute role="student"><DashboardPage /></ProtectedRoute>} />
-      <Route path="/apply" element={<ProtectedRoute role="student"><ApplyPage /></ProtectedRoute>} />
+      <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
+      <Route path="/apply" element={<ProtectedRoute><ApplyPage /></ProtectedRoute>} />
       <Route path="/admin/login" element={<AdminLoginPage />} />
       <Route path="/admin/dashboard" element={<ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>} />
       <Route path="/admin/applications" element={<ProtectedRoute role="admin"><AdminApplications /></ProtectedRoute>} />
@@ -54,17 +55,17 @@ const AppRoutes = () => {
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <AppProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
+    <BrowserRouter>
+      <AuthProvider>
+        <AppProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
             <AppRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
-      </AppProvider>
-    </AuthProvider>
+          </TooltipProvider>
+        </AppProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 

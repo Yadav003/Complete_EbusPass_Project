@@ -1,20 +1,12 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { authService } from '@/services/auth.service';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { authService, tokenStorage, isTokenExpired } from '@/services/auth.service';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   mobile: string;
-  role: 'student' | 'admin';
-}
-
-interface StoredUser {
-  id: string;
-  name: string;
-  email: string;
-  mobile: string;
-  password: string;
   role: 'student' | 'admin';
 }
 
@@ -61,40 +53,85 @@ interface AuthContextType {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<boolean>;
   register: (data: { name: string; email: string; mobile: string; password: string }) => Promise<boolean>;
-  logout: () => void;
+  logout: () => Promise<void>;
   adminLogin: (email: string, password: string) => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
+//Helper: parse stored user 
+const getStoredUser = (): User | null => {
+  try {
     const stored = localStorage.getItem('ebuspass_user');
     return stored ? JSON.parse(stored) : null;
-  });
+  } catch {
+    return null;
+  }
+};
 
+const saveUser = (user: User) => {
+  localStorage.setItem('ebuspass_user', JSON.stringify(user));
+};
+
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(getStoredUser);
+  const navigate = useNavigate();
+
+  // On mount: validate access token, silently refresh if expired
+  useEffect(() => {
+    const validateSession = async () => {
+      const accessToken = tokenStorage.getAccessToken();
+      const refreshToken = tokenStorage.getRefreshToken();
+
+      if (!accessToken) return; // No session at all
+
+      if (!isTokenExpired(accessToken)) return; // Token still valid, nothing to do
+
+      // Access token expired — try to refresh
+      if (!refreshToken || isTokenExpired(refreshToken)) {
+        // Refresh token also expired → force logout
+        tokenStorage.clear();
+        setUser(null);
+        navigate('/login', { replace: true });
+        return;
+      }
+
+      try {
+        const { accessToken: newAccess, refreshToken: newRefresh } = await authService.refreshToken();
+        tokenStorage.setAccessToken(newAccess);
+        tokenStorage.setRefreshToken(newRefresh);
+      } catch {
+        tokenStorage.clear();
+        setUser(null);
+        navigate('/login', { replace: true });
+      }
+    };
+
+    validateSession();
+  }, [navigate]);
+
+  //Login 
   const login = async (email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const users: StoredUser[] = JSON.parse(localStorage.getItem('ebuspass_users') || '[]');
-    const foundUser = users.find((u) => u.email === email && u.password === password);
-    
-    if (foundUser) {
+    try {
+      const { user: apiUser, accessToken, refreshToken } = await authService.login({ email, password });
       const userData: User = {
-        id: foundUser.id,
-        name: foundUser.name,
-        email: foundUser.email,
-        mobile: foundUser.mobile,
-        role: 'student'
+        id: apiUser._id,
+        name: apiUser.fullname,
+        email: apiUser.email,
+        mobile: apiUser.mobile,
+        role: apiUser.role,
       };
+      tokenStorage.setAccessToken(accessToken);
+      tokenStorage.setRefreshToken(refreshToken);
       setUser(userData);
-      localStorage.setItem('ebuspass_user', JSON.stringify(userData));
+      saveUser(userData);
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
+  // ─── Register 
   const register = async (data: { name: string; email: string; mobile: string; password: string }): Promise<boolean> => {
     try {
       const registeredUser = await authService.register({
@@ -111,34 +148,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         role: registeredUser.role,
       };
       setUser(userData);
-      localStorage.setItem('ebuspass_user', JSON.stringify(userData));
+      saveUser(userData);
       return true;
     } catch {
       return false;
     }
   };
 
+  // Admin Login 
+
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
     if (email === 'admin@ebuspass.gov.in' && password === 'admin123') {
       const adminUser: User = {
         id: 'admin_1',
         name: 'Administrator',
-        email: email,
+        email,
         mobile: '9999999999',
-        role: 'admin'
+        role: 'admin',
       };
       setUser(adminUser);
-      localStorage.setItem('ebuspass_user', JSON.stringify(adminUser));
+      saveUser(adminUser);
       return true;
     }
     return false;
   };
 
-  const logout = () => {
+  // Logout 
+  const logout = async (): Promise<void> => {
+    try {
+      await authService.logout();
+    } catch {
+      // best-effort — clear client side regardless
+    }
+    tokenStorage.clear();
     setUser(null);
-    localStorage.removeItem('ebuspass_user');
+    navigate('/login', { replace: true });
   };
 
   return (

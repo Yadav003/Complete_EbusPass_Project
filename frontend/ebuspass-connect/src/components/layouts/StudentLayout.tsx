@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Bus, LayoutDashboard, FileText, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,12 +10,10 @@ interface StudentLayoutProps {
 
 const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const location = useLocation();
-  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const handleLogout = async () => {
+    await logout();
   };
 
   const navItems = [

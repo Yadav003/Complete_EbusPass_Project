@@ -4,8 +4,10 @@ import { motion } from 'framer-motion';
 import { Bus, Shield, Clock, FileText, ArrowRight, CheckCircle, Users, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage = () => {
+  const { isAuthenticated, user } = useAuth();
   const features = [
     {
       icon: FileText,
@@ -60,12 +62,20 @@ const LandingPage = () => {
             <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
           </nav>
           <div className="flex items-center gap-3">
-            <Link to="/login">
-              <Button variant="ghost">Login</Button>
-            </Link>
-            <Link to="/register">
-              <Button>Get Started</Button>
-            </Link>
+            {isAuthenticated ? (
+              <Link to="/apply">
+                <Button>Apply Now</Button>
+              </Link>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant="ghost">Login</Button>
+                </Link>
+                <Link to="/register">
+                  <Button>Get Started</Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -91,15 +101,15 @@ const LandingPage = () => {
                 for students across all educational institutions.
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
-                <Link to="/register">
+                <Link to={isAuthenticated ? '/apply' : '/register'}>
                   <Button variant="hero" size="xl" className="w-full sm:w-auto">
                     Apply Now
                     <ArrowRight className="w-5 h-5" />
                   </Button>
                 </Link>
-                <Link to="/login">
+                <Link to={isAuthenticated ? '/dashboard' : '/login'}>
                   <Button variant="outline" size="xl" className="w-full sm:w-auto">
-                    Track Application
+                    {isAuthenticated ? 'Go to Dashboard' : 'Track Application'}
                   </Button>
                 </Link>
               </div>

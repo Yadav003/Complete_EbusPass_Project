@@ -61,13 +61,14 @@ const ApplyPage = () => {
 
   const validateStep = (step: number): boolean => {
     switch (step) {
-      case 1:
+      case 1: {
         const { fullName, dob, gender, mobile, email, address, collegeName, course, yearSemester } = personalDetails;
         if (!fullName || !dob || !gender || !mobile || !email || !address || !collegeName || !course || !yearSemester) {
           toast.error('Please fill in all personal details');
           return false;
         }
         return true;
+      }
       case 2:
         if (!documents.aadhaar || !documents.collegeId || !documents.photo) {
           toast.error('Please upload all required documents');

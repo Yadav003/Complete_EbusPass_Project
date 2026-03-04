@@ -8,7 +8,10 @@ export const ENDPOINTS = {
 
   AUTH: {
     REGISTER: `${API_V1}/users/register`,
-   },
+    LOGIN: `${API_V1}/users/login`,
+    LOGOUT: `${API_V1}/users/logout`,
+    REFRESH_TOKEN: `${API_V1}/users/refresh-token`,
+  },
 
   
   ADMIN: {},
