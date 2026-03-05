@@ -134,21 +134,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // ─── Register 
   const register = async (data: { name: string; email: string; mobile: string; password: string }): Promise<boolean> => {
     try {
-      const registeredUser = await authService.register({
+      await authService.register({
         fullname: data.name,
         email: data.email,
         mobile: data.mobile,
         password: data.password,
       });
-      const userData: User = {
-        id: registeredUser._id,
-        name: registeredUser.fullname,
-        email: registeredUser.email,
-        mobile: registeredUser.mobile,
-        role: registeredUser.role,
-      };
-      setUser(userData);
-      saveUser(userData);
+      // Registration successful — do NOT log in automatically.
+      // User must go through the login flow separately.
       return true;
     } catch {
       return false;

@@ -54,8 +54,8 @@ const RegisterPage = () => {
     setIsLoading(false);
     
     if (success) {
-      toast.success('Registration successful!');
-      navigate('/dashboard');
+      toast.success('Registration successful! Please log in to continue.');
+      navigate('/login');
     } else {
       toast.error('Email already exists. Please login instead.');
     }
