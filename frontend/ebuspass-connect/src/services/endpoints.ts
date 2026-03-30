@@ -16,7 +16,15 @@ export const ENDPOINTS = {
   
   ADMIN: {},
 
- APPLICATIONS: {},
+  APPLICATIONS: {
+    CREATE: `${API_V1}/applications/create`,
+    USER_APPLICATIONS: `${API_V1}/applications/my-applications`,
+    GET_ALL: `${API_V1}/applications`,
+    GET_BY_ID: (id: string) => `${API_V1}/applications/${id}`,
+    UPDATE: (id: string) => `${API_V1}/applications/${id}`,
+    DELETE: (id: string) => `${API_V1}/applications/${id}`,
+    UPDATE_STATUS: (id: string) => `${API_V1}/applications/${id}/status`,
+  },
 
   COLLEGES: {},
 
