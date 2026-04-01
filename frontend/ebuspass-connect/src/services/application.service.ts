@@ -1,5 +1,5 @@
 
-// import apiClient from "./apiClient";
+import apiClient from "./apiClient";
 import { ENDPOINTS } from "./endpoints";
 
 export type ApplicationStatus =
@@ -26,5 +26,24 @@ export interface CreateApplicationPayload {
   documents?: FormData;
 }
 
+export interface SaveBasicDetailsPayload {
+  fullName: string;
+  dob: string;
+  gender: string;
+  mobile: string;
+  email: string;
+  address: string;
+  collegeName: string;
+  course: string;
+  yearSemester: string;
+}
+
 export const applicationService = {
+  saveBasicDetails: async (personalDetails: SaveBasicDetailsPayload) => {
+    const response = await apiClient.post(ENDPOINTS.APPLICATIONS.BASIC_DETAILS, {
+      personalDetails,
+    });
+
+    return response.data;
+  },
 };

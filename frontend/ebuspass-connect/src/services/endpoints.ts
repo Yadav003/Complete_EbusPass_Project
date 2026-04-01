@@ -17,6 +17,7 @@ export const ENDPOINTS = {
   ADMIN: {},
 
   APPLICATIONS: {
+    BASIC_DETAILS: `${API_V1}/applications/basic-details`,
     CREATE: `${API_V1}/applications/create`,
     USER_APPLICATIONS: `${API_V1}/applications/my-applications`,
     GET_ALL: `${API_V1}/applications`,

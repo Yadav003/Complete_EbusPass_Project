@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Bus, User, FileText, MapPin, CreditCard, Check, ArrowLeft, ArrowRight, Upload, X, Eye } from 'lucide-react';
+import { AnimatePresence } from 'framer-motion';
+import { User, FileText, MapPin, CreditCard, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApp, Route } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import StudentLayout from '@/components/layouts/StudentLayout';
+import { applicationService } from '@/services';
+import BasicDetails from './BasicDetails';
 import UploadDocuments from './UploadDocuments';
 import RouteSelection from './RouteSelection';
+import Payments from './Payments';
 
 const steps = [
   { id: 1, title: 'Personal Details', icon: User },
@@ -26,6 +26,7 @@ const ApplyPage = () => {
   const { user } = useAuth();
   const { colleges, routes, addApplication } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [personalDetails, setPersonalDetails] = useState({
@@ -94,10 +95,31 @@ const ApplyPage = () => {
     }
   };
 
-  const nextStep = () => {
-    if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 4));
+  const nextStep = async () => {
+    if (!validateStep(currentStep)) {
+      return;
     }
+
+    if (currentStep === 1) {
+      if (!user) {
+        toast.error('Please log in to save your details');
+        return;
+      }
+
+      try {
+        setIsSavingBasicDetails(true);
+        await applicationService.saveBasicDetails(personalDetails);
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+        toast.success('Basic details saved successfully');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to save basic details');
+      } finally {
+        setIsSavingBasicDetails(false);
+      }
+      return;
+    }
+
+    setCurrentStep(prev => Math.min(prev + 1, 4));
   };
 
   const prevStep = () => {
@@ -112,7 +134,7 @@ const ApplyPage = () => {
     // Simulate payment processing
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    const appId = addApplication({
+    addApplication({
       userId: user.id,
       status: 'under_review',
       personalDetails,
@@ -146,124 +168,11 @@ const ApplyPage = () => {
     switch (currentStep) {
       case 1:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            <div className="grid md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name *</Label>
-                <Input
-                  id="fullName"
-                  name="fullName"
-                  value={personalDetails.fullName}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter full name"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="dob">Date of Birth *</Label>
-                <Input
-                  id="dob"
-                  name="dob"
-                  type="date"
-                  value={personalDetails.dob}
-                  onChange={handlePersonalChange}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="gender">Gender *</Label>
-                <select
-                  id="gender"
-                  name="gender"
-                  value={personalDetails.gender}
-                  onChange={handlePersonalChange}
-                  className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
-                >
-                  <option value="">Select Gender</option>
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="mobile">Mobile Number *</Label>
-                <Input
-                  id="mobile"
-                  name="mobile"
-                  value={personalDetails.mobile}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter mobile number"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="email">Email Address *</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={personalDetails.email}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="address">Full Address *</Label>
-                <textarea
-                  id="address"
-                  name="address"
-                  value={personalDetails.address}
-                  onChange={handlePersonalChange}
-                  placeholder="Enter your complete address"
-                  className="flex min-h-20 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm resize-none"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="collegeName">College/Institution *</Label>
-                <select
-                  id="collegeName"
-                  name="collegeName"
-                  value={personalDetails.collegeName}
-                  onChange={handlePersonalChange}
-                  className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
-                >
-                  <option value="">Select College</option>
-                  {colleges.map(college => (
-                    <option key={college.id} value={college.name}>{college.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="course">Course *</Label>
-                <Input
-                  id="course"
-                  name="course"
-                  value={personalDetails.course}
-                  onChange={handlePersonalChange}
-                  placeholder="e.g., B.Tech, MBBS, BA"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="yearSemester">Year/Semester *</Label>
-                <select
-                  id="yearSemester"
-                  name="yearSemester"
-                  value={personalDetails.yearSemester}
-                  onChange={handlePersonalChange}
-                  className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
-                >
-                  <option value="">Select Year</option>
-                  <option value="1st Year">1st Year</option>
-                  <option value="2nd Year">2nd Year</option>
-                  <option value="3rd Year">3rd Year</option>
-                  <option value="4th Year">4th Year</option>
-                  <option value="5th Year">5th Year</option>
-                </select>
-              </div>
-            </div>
-          </motion.div>
+          <BasicDetails
+            personalDetails={personalDetails}
+            colleges={colleges}
+            onPersonalChange={handlePersonalChange}
+          />
         );
 
       case 2:
@@ -285,60 +194,11 @@ const ApplyPage = () => {
 
       case 4:
         return (
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-6"
-          >
-            {selectedRoute && (
-              <Card variant="default">
-                <CardContent className="p-4">
-                  <h4 className="font-semibold mb-4">Order Summary</h4>
-                  <div className="space-y-3 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Route</span>
-                      <span>{selectedRoute.name}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">From - To</span>
-                      <span>{selectedRoute.source} → {selectedRoute.destination}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Distance</span>
-                      <span>{selectedRoute.distance} km</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Pass Validity</span>
-                      <span>30 Days</span>
-                    </div>
-                    <div className="flex justify-between font-semibold text-lg pt-3 border-t">
-                      <span>Total Amount</span>
-                      <span className="text-primary">₹{selectedRoute.totalFare * 30}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="space-y-3">
-              <Label>Select Payment Method</Label>
-              <div className="grid grid-cols-2 gap-3">
-                {['UPI', 'Debit Card', 'Credit Card', 'Net Banking'].map(method => (
-                  <Card
-                    key={method}
-                    variant={paymentMethod === method ? 'bordered' : 'interactive'}
-                    className={`cursor-pointer ${paymentMethod === method ? 'ring-2 ring-primary border-primary' : ''}`}
-                    onClick={() => setPaymentMethod(method)}
-                  >
-                    <CardContent className="p-4 text-center">
-                      <span className="font-medium">{method}</span>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+          <Payments
+            selectedRoute={selectedRoute}
+            paymentMethod={paymentMethod}
+            onPaymentMethodChange={setPaymentMethod}
+          />
         );
 
       default:
@@ -352,7 +212,7 @@ const ApplyPage = () => {
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between relative">
-            {steps.map((step, index) => (
+            {steps.map(step => (
               <div key={step.id} className="flex flex-col items-center relative z-10">
                 <div
                   className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
@@ -408,8 +268,8 @@ const ApplyPage = () => {
               </Button>
               
               {currentStep < 4 ? (
-                <Button onClick={nextStep}>
-                  Next
+                <Button onClick={nextStep} disabled={isSavingBasicDetails}>
+                  {currentStep === 1 && isSavingBasicDetails ? 'Saving...' : 'Next'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (
