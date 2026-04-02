@@ -398,14 +398,14 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
       .map(route => ({
         route,
         score: getRouteScore(route, startStand, endStand),
-        monthlyFare: route.distance * FARE_PER_KM * MONTHLY_DAYS,
+        monthlyFare: route.distance * FARE_PER_KM ,
       }))
       .filter(match => match.score > 0)
       .sort((left, right) => right.score - left.score || left.route.distance - right.route.distance);
   }, [routes, startStand, endStand]);
 
   const activeRoute = routeMatches[0]?.route ?? null;
-  const selectedMonthlyFare = activeRoute ? activeRoute.distance * FARE_PER_KM * MONTHLY_DAYS : 0;
+  const selectedMonthlyFare = activeRoute ? activeRoute.distance * FARE_PER_KM  : 0;
 
   useEffect(() => {
     if ((activeRoute?.id ?? null) !== (selectedRoute?.id ?? null)) {
@@ -450,9 +450,6 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
                 <BusFront className="h-4 w-4 text-primary" />
                 <p className="font-semibold text-foreground">Location selection</p>
               </div>
-              <p className="mt-1 text-sm text-muted-foreground">
-                State and district are loaded from the API. Bus stand names are also API-driven and can be managed by the admin panel.
-              </p>
             </div>
 
           </div>
@@ -537,9 +534,9 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
               </p>
             </div>
 
-            <Badge variant={busStands.length ? 'success' : 'warning'}>
-              {busStands.length ? 'Ready to choose stands' : 'Select a district first'}
-            </Badge>
+            {/* <Badge variant={busStands.length ? 'success' : 'warning'}>
+              {busStands.length ? 'Filled' : 'Pending'}
+            </Badge> */}
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">

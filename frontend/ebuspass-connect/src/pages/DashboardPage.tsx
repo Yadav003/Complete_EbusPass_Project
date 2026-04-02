@@ -84,7 +84,7 @@ const DashboardPage = () => {
               <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                   <CardTitle>Application Status</CardTitle>
-                  <CardDescription>Application ID: {application.id}</CardDescription>
+                  <CardDescription className="mt-1">Application ID: {application.id}</CardDescription>
                 </div>
                 {getStatusBadge(application.status)}
               </CardHeader>
