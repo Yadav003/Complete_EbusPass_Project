@@ -27,6 +27,7 @@ const ApplyPage = () => {
   const { colleges, routes, addApplication } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
+  const [isSavingDocuments, setIsSavingDocuments] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [personalDetails, setPersonalDetails] = useState({
@@ -115,6 +116,34 @@ const ApplyPage = () => {
         toast.error(error instanceof Error ? error.message : 'Failed to save basic details');
       } finally {
         setIsSavingBasicDetails(false);
+      }
+      return;
+    }
+
+    if (currentStep === 2) {
+      if (!user) {
+        toast.error('Please log in to save your documents');
+        return;
+      }
+
+      if (!documents.aadhaar || !documents.collegeId || !documents.photo) {
+        toast.error('Please upload all required documents');
+        return;
+      }
+
+      try {
+        setIsSavingDocuments(true);
+        await applicationService.saveDocumentsUpload({
+          aadhaar: documents.aadhaar,
+          collegeId: documents.collegeId,
+          photo: documents.photo,
+        });
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+        toast.success('Documents uploaded successfully');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to upload documents');
+      } finally {
+        setIsSavingDocuments(false);
       }
       return;
     }
@@ -268,8 +297,15 @@ const ApplyPage = () => {
               </Button>
               
               {currentStep < 4 ? (
-                <Button onClick={nextStep} disabled={isSavingBasicDetails}>
-                  {currentStep === 1 && isSavingBasicDetails ? 'Saving...' : 'Next'}
+                <Button
+                  onClick={nextStep}
+                  disabled={isSavingBasicDetails || isSavingDocuments}
+                >
+                  {currentStep === 1 && isSavingBasicDetails
+                    ? 'Saving...'
+                    : currentStep === 2 && isSavingDocuments
+                      ? 'Uploading...'
+                      : 'Next'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               ) : (

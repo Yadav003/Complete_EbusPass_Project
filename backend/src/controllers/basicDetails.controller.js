@@ -68,7 +68,7 @@ const saveBasicDetails = asyncHandler(async (req, res) => {
       personalDetails: normalizedPersonalDetails,
     },
     {
-      new: true,
+      returnDocument: "after",
       upsert: true,
       runValidators: true,
       setDefaultsOnInsert: true,

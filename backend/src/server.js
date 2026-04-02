@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 import connectDB from "./db/db-config.js";
-import app from "./app.js";
 
 // load environment variables
 dotenv.config();
+
+const { default: app } = await import("./app.js");
 
 // connect to MongoDB
 connectDB()

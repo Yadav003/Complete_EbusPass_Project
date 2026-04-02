@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { upload } from "../middlewares/multer.middleware.js";
 import saveBasicDetails from "../controllers/basicDetails.controller.js";
+import saveDocumentsUpload from "../controllers/documentsUpload.controllers.js";
 import getUserApplications from "../controllers/application/getUserApplications.controller.js";
 import { getApplicationById, getAllApplications } from "../controllers/application/getAllApplications.controller.js";
 import {
@@ -14,6 +16,15 @@ const router = Router();
 
 // User routes (protected)
 router.route("/basic-details").post(verifyJWT, saveBasicDetails);
+router.route("/documents-upload").post(
+	verifyJWT,
+	upload.fields([
+		{ name: "aadhaar", maxCount: 1 },
+		{ name: "collegeId", maxCount: 1 },
+		{ name: "photo", maxCount: 1 },
+	]),
+	saveDocumentsUpload
+);
 router.route("/create").post(verifyJWT, createApplication);
 router.route("/my-applications").get(verifyJWT, getUserApplications);
 router.route("/:applicationId").get(verifyJWT, getApplicationById);

@@ -79,6 +79,14 @@ const apiClient: AxiosInstance = axios.create({
 
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const isFormData =
+      typeof FormData !== "undefined" && config.data instanceof FormData;
+
+    if (isFormData && config.headers) {
+      delete (config.headers as Record<string, string>)["Content-Type"];
+      delete (config.headers as Record<string, string>)["content-type"];
+    }
+
     // 1. Attach access token
     const token = tokenStorage.getAccessToken();
     if (token) {
