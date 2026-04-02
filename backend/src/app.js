@@ -26,9 +26,11 @@ app.use(cookieParser());
 
 import userRoutes from './routes/user.routes.js'
 import applicationRoutes from './routes/application.routes.js'
+import resourcesRoutes from './routes/resources.routes.js'
 
 app.use('/api/v1/users', userRoutes)
 app.use('/api/v1/applications', applicationRoutes)
+app.use('/api/v1/resources', resourcesRoutes)
 
 // Global error handler
 app.use((err, req, res, next) => {

@@ -32,5 +32,12 @@ export const ENDPOINTS = {
 
   ROUTES: {},
 
+  RESOURCES: {
+    STATES: `${API_V1}/resources/locations/states`,
+    DISTRICTS: (state: string) => `${API_V1}/resources/locations/districts?state=${encodeURIComponent(state)}`,
+    BUS_STANDS: (state: string, district: string) =>
+      `${API_V1}/resources/locations/bus-stands?state=${encodeURIComponent(state)}&district=${encodeURIComponent(district)}`,
+  },
+
   UPLOADS: {},
 } as const;

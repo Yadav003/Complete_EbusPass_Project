@@ -12,5 +12,5 @@ export type { Application, ApplicationStatus, CreateApplicationPayload } from ".
 export { adminService } from "./admin.service";
 export type { DashboardStats } from "./admin.service";
 
-export { collegeService, routeService } from "./resources.service";
-export type { College, Route } from "./resources.service";
+export { collegeService, routeService, locationService } from "./resources.service";
+export type { College, Route, BusStandLocation } from "./resources.service";
