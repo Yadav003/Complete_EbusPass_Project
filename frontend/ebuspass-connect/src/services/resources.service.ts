@@ -25,6 +25,8 @@ export interface BusStandLocation {
   state: string;
   district: string;
   note?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export const collegeService = {

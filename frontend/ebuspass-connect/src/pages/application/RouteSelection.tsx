@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
+import { GoogleMap, LoadScript, Marker, Polyline } from '@react-google-maps/api';
 import {
   AlertTriangle,
   ArrowRight,
@@ -74,45 +75,173 @@ const IndiaMapCard = ({
   selectedDistrict: string;
   startStand: BusStandLocation | null;
   endStand: BusStandLocation | null;
-}) => (
-  <Card variant="glass" className="overflow-hidden border-slate-200/10 bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
-    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.22),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.18),transparent_28%)]" />
-    <div className="absolute inset-0 opacity-40 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:34px_34px]" />
+}) => {
+  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+  
+  // India center coordinates
+  const indiaCenter = { lat: 20.5937, lng: 78.9629 };
+  
+  // Convert BusStandLocation to map marker format if they have coordinates
+  const markers = [];
+  if (startStand?.latitude && startStand?.longitude) {
+    markers.push({
+      lat: startStand.latitude,
+      lng: startStand.longitude,
+      label: 'Start',
+      color: '#22c55e',
+    });
+  }
+  if (endStand?.latitude && endStand?.longitude) {
+    markers.push({
+      lat: endStand.latitude,
+      lng: endStand.longitude,
+      label: 'End',
+      color: '#ef4444',
+    });
+  }
 
-    <CardContent className="relative space-y-5 p-5 sm:p-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <Badge variant="secondary" className="border-white/10 bg-white/10 text-white hover:bg-white/15">
-            Map
-          </Badge>
-          <p className="mt-2 max-w-2xl text-sm text-white/70 sm:text-base">
-            The map area helps the user understand the travel zone before choosing state, district, start point, and end point.
-          </p>
+  // Create polyline path if both markers exist
+  const polylinePath = markers.length === 2 ? [
+    { lat: markers[0].lat, lng: markers[0].lng },
+    { lat: markers[1].lat, lng: markers[1].lng },
+  ] : [];
+
+  return (
+    <Card variant="glass" className="overflow-hidden border-slate-200/10 bg-slate-950 text-white shadow-[0_30px_80px_rgba(15,23,42,0.28)]">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(59,130,246,0.22),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(14,165,233,0.18),transparent_28%)]" />
+      <div className="absolute inset-0 opacity-40 bg-[linear-gradient(to_right,rgba(255,255,255,0.06)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.06)_1px,transparent_1px)] bg-[size:34px_34px]" />
+
+      <CardContent className="relative space-y-5 p-5 sm:p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <Badge variant="secondary" className="border-white/10 bg-white/10 text-white hover:bg-white/15">
+              Map
+            </Badge>
+            <p className="mt-2 max-w-2xl text-sm text-white/70 sm:text-base">
+              The map area helps the user understand the travel zone before choosing state, district, start point, and end point.
+            </p>
+          </div>
         </div>
 
-      </div>
+        <div className="relative min-h-[340px] overflow-hidden rounded-[24px] border border-white/10">
+          {!GOOGLE_MAPS_API_KEY ? (
+            <div className="flex h-[340px] items-center justify-center rounded-[24px] bg-slate-900/50">
+              <div className="text-center">
+                <AlertTriangle className="mx-auto mb-3 h-8 w-8 text-amber-500" />
+                <p className="mb-2 font-semibold text-white">Google Maps API Key Missing</p>
+              
+              </div>
+            </div>
+          ) : (
+            <LoadScript googleMapsApiKey={GOOGLE_MAPS_API_KEY}>
+              <GoogleMap
+                mapContainerStyle={{
+                  width: '100%',
+                  height: '340px',
+                  borderRadius: '24px',
+                }}
+                center={startStand?.latitude && startStand?.longitude ? 
+                  { lat: startStand.latitude, lng: startStand.longitude } : 
+                  indiaCenter
+                }
+                zoom={startStand && endStand ? 7 : 5}
+                options={{
+                  styles: [
+                    {
+                      elementType: 'geometry',
+                      stylers: [{ color: '#0f172a' }],
+                    },
+                  {
+                    elementType: 'labels.text.stroke',
+                    stylers: [{ color: '#0f172a' }],
+                  },
+                  {
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#e0e7ff' }],
+                  },
+                  {
+                    featureType: 'administrative.locality',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#9ca3af' }],
+                  },
+                  {
+                    featureType: 'road',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#38444d' }],
+                  },
+                  {
+                    featureType: 'road',
+                    elementType: 'geometry.stroke',
+                    stylers: [{ color: '#212121' }],
+                  },
+                  {
+                    featureType: 'road.highway',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#3c4e4f' }],
+                  },
+                  {
+                    featureType: 'road.highway',
+                    elementType: 'geometry.stroke',
+                    stylers: [{ color: '#212121' }],
+                  },
+                  {
+                    featureType: 'road.arterial',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#38444d' }],
+                  },
+                  {
+                    featureType: 'poi',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#181818' }],
+                  },
+                  {
+                    featureType: 'water',
+                    elementType: 'geometry',
+                    stylers: [{ color: '#0e4429' }],
+                  },
+                  {
+                    featureType: 'water',
+                    elementType: 'labels.text.fill',
+                    stylers: [{ color: '#4fd0e7' }],
+                  },
+                ],
+              }}
+            >
+              {/* Draw markers for start and end points */}
+              {startStand?.latitude && startStand?.longitude && (
+                <Marker
+                  position={{ lat: startStand.latitude, lng: startStand.longitude }}
+                  title={`Start: ${startStand.name}`}
+                  icon={`http://maps.google.com/mapfiles/ms/icons/green-dot.png`}
+                />
+              )}
+              {endStand?.latitude && endStand?.longitude && (
+                <Marker
+                  position={{ lat: endStand.latitude, lng: endStand.longitude }}
+                  title={`End: ${endStand.name}`}
+                  icon={`http://maps.google.com/mapfiles/ms/icons/red-dot.png`}
+                />
+              )}
 
-      <div className="relative min-h-[340px] overflow-hidden rounded-[24px] border border-white/10 bg-[#08111f]">
-        <svg viewBox="0 0 900 560" className="absolute inset-0 h-full w-full">
-          <defs>
-            <linearGradient id="indiaMapFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="rgba(59, 130, 246, 0.40)" />
-              <stop offset="100%" stopColor="rgba(14, 165, 233, 0.20)" />
-            </linearGradient>
-            <linearGradient id="routeGlow" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%" stopColor="rgba(96, 165, 250, 0.12)" />
-              <stop offset="50%" stopColor="rgba(96, 165, 250, 0.95)" />
-              <stop offset="100%" stopColor="rgba(96, 165, 250, 0.12)" />
-            </linearGradient>
-            
-          </defs>
-
-        </svg>
-
-      </div>
-    </CardContent>
-  </Card>
-);
+              {/* Draw route line between points */}
+              {polylinePath.length === 2 && (
+                <Polyline
+                  path={polylinePath}
+                  options={{
+                    strokeColor: '#3b82f6',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 3,
+                  }}
+                />
+              )}
+            </GoogleMap>
+            </LoadScript>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
 
 const StandPicker = ({
   label,
