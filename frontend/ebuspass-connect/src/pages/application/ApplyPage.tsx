@@ -28,6 +28,7 @@ const ApplyPage = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
   const [isSavingDocuments, setIsSavingDocuments] = useState(false);
+  const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   
   const [personalDetails, setPersonalDetails] = useState({
@@ -144,6 +145,35 @@ const ApplyPage = () => {
         toast.error(error instanceof Error ? error.message : 'Failed to upload documents');
       } finally {
         setIsSavingDocuments(false);
+      }
+      return;
+    }
+
+    if (currentStep === 3) {
+      if (!user) {
+        toast.error('Please log in to save your route selection');
+        return;
+      }
+
+      if (!selectedRoute) {
+        toast.error('Please select a route');
+        return;
+      }
+
+      try {
+        setIsSavingRoute(true);
+        await applicationService.saveRouteSelection({
+          source: selectedRoute.source,
+          destination: selectedRoute.destination,
+          distance: selectedRoute.distance,
+          fare: selectedRoute.totalFare,
+        });
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+        toast.success('Route selection saved successfully');
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to save route selection');
+      } finally {
+        setIsSavingRoute(false);
       }
       return;
     }
@@ -299,12 +329,14 @@ const ApplyPage = () => {
               {currentStep < 4 ? (
                 <Button
                   onClick={nextStep}
-                  disabled={isSavingBasicDetails || isSavingDocuments}
+                  disabled={isSavingBasicDetails || isSavingDocuments || isSavingRoute}
                 >
                   {currentStep === 1 && isSavingBasicDetails
                     ? 'Saving...'
                     : currentStep === 2 && isSavingDocuments
                       ? 'Uploading...'
+                      : currentStep === 3 && isSavingRoute
+                        ? 'Saving...'
                       : 'Next'}
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>

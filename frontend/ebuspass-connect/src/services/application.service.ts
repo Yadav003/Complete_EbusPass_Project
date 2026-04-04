@@ -44,6 +44,14 @@ export interface SaveDocumentsUploadPayload {
   photo: File;
 }
 
+export interface SaveRouteSelectionPayload {
+  source: string;
+  destination: string;
+  distance: number;
+  fare: number;
+  routeId?: string;
+}
+
 export const applicationService = {
   saveBasicDetails: async (personalDetails: SaveBasicDetailsPayload) => {
     const response = await apiClient.post(ENDPOINTS.APPLICATIONS.BASIC_DETAILS, {
@@ -63,6 +71,14 @@ export const applicationService = {
       headers: {
         "Content-Type": "multipart/form-data",
       },
+    });
+
+    return response.data;
+  },
+
+  saveRouteSelection: async (route: SaveRouteSelectionPayload) => {
+    const response = await apiClient.post(ENDPOINTS.APPLICATIONS.ROUTE_SELECTION, {
+      route,
     });
 
     return response.data;

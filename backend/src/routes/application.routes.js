@@ -3,6 +3,7 @@ import { verifyJWT } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import saveBasicDetails from "../controllers/basicDetails.controller.js";
 import saveDocumentsUpload from "../controllers/documentsUpload.controllers.js";
+import saveRouteSelection from "../controllers/routeSelection.controllers.js";
 import getUserApplications from "../controllers/application/getUserApplications.controller.js";
 import { getApplicationById, getAllApplications } from "../controllers/application/getAllApplications.controller.js";
 import {
@@ -25,6 +26,7 @@ router.route("/documents-upload").post(
 	]),
 	saveDocumentsUpload
 );
+router.route("/route-selection").post(verifyJWT, saveRouteSelection);
 router.route("/create").post(verifyJWT, createApplication);
 router.route("/my-applications").get(verifyJWT, getUserApplications);
 router.route("/:applicationId").get(verifyJWT, getApplicationById);

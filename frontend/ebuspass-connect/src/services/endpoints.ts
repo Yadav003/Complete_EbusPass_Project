@@ -19,6 +19,7 @@ export const ENDPOINTS = {
   APPLICATIONS: {
     BASIC_DETAILS: `${API_V1}/applications/basic-details`,
     DOCUMENTS_UPLOAD: `${API_V1}/applications/documents-upload`,
+    ROUTE_SELECTION: `${API_V1}/applications/route-selection`,
     CREATE: `${API_V1}/applications/create`,
     USER_APPLICATIONS: `${API_V1}/applications/my-applications`,
     GET_ALL: `${API_V1}/applications`,
