@@ -62,7 +62,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 //Helper: parse stored user 
 const getStoredUser = (): User | null => {
   try {
-    const stored = localStorage.getItem('ebuspass_user');
+    const stored = sessionStorage.getItem('ebuspass_user');
     return stored ? JSON.parse(stored) : null;
   } catch {
     return null;
@@ -70,7 +70,7 @@ const getStoredUser = (): User | null => {
 };
 
 const saveUser = (user: User) => {
-  localStorage.setItem('ebuspass_user', JSON.stringify(user));
+  sessionStorage.setItem('ebuspass_user', JSON.stringify(user));
 };
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -151,19 +151,27 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // Admin Login 
 
   const adminLogin = async (email: string, password: string): Promise<boolean> => {
-    if (email === 'admin@ebuspass.gov.in' && password === 'admin123') {
+    try {
+      const { user: apiUser, accessToken, refreshToken } = await authService.adminLogin({ email, password });
+      if (apiUser.role !== 'admin') {
+        tokenStorage.clear();
+        return false;
+      }
       const adminUser: User = {
-        id: 'admin_1',
-        name: 'Administrator',
-        email,
-        mobile: '9999999999',
-        role: 'admin',
+        id: apiUser._id,
+        name: apiUser.fullname,
+        email: apiUser.email,
+        mobile: apiUser.mobile,
+        role: apiUser.role,
       };
+      tokenStorage.setAccessToken(accessToken);
+      tokenStorage.setRefreshToken(refreshToken);
       setUser(adminUser);
       saveUser(adminUser);
       return true;
+    } catch {
+      return false;
     }
-    return false;
   };
 
   // Logout 

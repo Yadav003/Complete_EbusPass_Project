@@ -28,6 +28,7 @@ const registerUser = asyncHandler(async (req, res) => {
     fullname: fullname.trim(),
     email: email.toLowerCase().trim(),
     mobile: mobile.trim(),
+    role: "student",
     password,
   });
 

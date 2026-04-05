@@ -100,14 +100,6 @@ const AdminLoginPage = () => {
                 {isLoading ? 'Signing in...' : 'Sign In as Admin'}
               </Button>
             </form>
-
-            <div className="mt-6 p-4 bg-muted rounded-lg">
-              <p className="text-xs text-muted-foreground text-center">
-                <strong>Demo Credentials:</strong><br />
-                Email: admin@ebuspass.gov.in<br />
-                Password: admin123
-              </p>
-            </div>
           </CardContent>
         </Card>
       </motion.div>

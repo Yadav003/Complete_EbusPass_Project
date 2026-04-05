@@ -19,37 +19,45 @@ export const COOKIE_OPTIONS = {
   sameSite: "strict",
 };
 
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+const loginWithRole = (requiredRole) =>
+  asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
 
-  if (!email || !password) {
-    throw new ApiError(400, "Email and password are required");
-  }
+    if (!email || !password) {
+      throw new ApiError(400, "Email and password are required");
+    }
 
-  const user = await User.findOne({ email: email.toLowerCase().trim() });
-  if (!user) {
-    throw new ApiError(401, "Invalid email or password");
-  }
+    const user = await User.findOne({ email: email.toLowerCase().trim() });
+    if (!user) {
+      throw new ApiError(401, "Invalid email or password");
+    }
 
-  const isPasswordValid = await user.isPasswordCorrect(password);
-  if (!isPasswordValid) {
-    throw new ApiError(401, "Invalid email or password");
-  }
+    const isPasswordValid = await user.isPasswordCorrect(password);
+    if (!isPasswordValid) {
+      throw new ApiError(401, "Invalid email or password");
+    }
 
-  const { accessToken, refreshToken } = await generateTokens(user._id);
-  const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+    if (requiredRole && user.role !== requiredRole) {
+      throw new ApiError(403, "Admin access required");
+    }
 
-  return res
-    .status(200)
-    .cookie("accessToken", accessToken, COOKIE_OPTIONS)
-    .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
-    .json({
-      message: "Login successful",
-      user: loggedInUser,
-      accessToken,
-      refreshToken,
-    });
-});
+    const { accessToken, refreshToken } = await generateTokens(user._id);
+    const loggedInUser = await User.findById(user._id).select("-password -refreshToken");
+
+    return res
+      .status(200)
+      .cookie("accessToken", accessToken, COOKIE_OPTIONS)
+      .cookie("refreshToken", refreshToken, COOKIE_OPTIONS)
+      .json({
+        message: "Login successful",
+        user: loggedInUser,
+        accessToken,
+        refreshToken,
+      });
+  });
+
+const loginUser = loginWithRole();
+const loginAdmin = loginWithRole("admin");
 
 // Logout
 
@@ -96,4 +104,4 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     .json({ accessToken, refreshToken });
 });
 
-export { loginUser, logoutUser, refreshAccessToken };
+export { loginUser, loginAdmin, logoutUser, refreshAccessToken };

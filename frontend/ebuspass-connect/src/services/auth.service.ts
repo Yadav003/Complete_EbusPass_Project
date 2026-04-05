@@ -33,14 +33,14 @@ const ACCESS_TOKEN_KEY = "ebuspass_access_token";
 const REFRESH_TOKEN_KEY = "ebuspass_refresh_token";
 
 export const tokenStorage = {
-  getAccessToken: () => localStorage.getItem(ACCESS_TOKEN_KEY),
-  setAccessToken: (token: string) => localStorage.setItem(ACCESS_TOKEN_KEY, token),
-  getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
-  setRefreshToken: (token: string) => localStorage.setItem(REFRESH_TOKEN_KEY, token),
+  getAccessToken: () => sessionStorage.getItem(ACCESS_TOKEN_KEY),
+  setAccessToken: (token: string) => sessionStorage.setItem(ACCESS_TOKEN_KEY, token),
+  getRefreshToken: () => sessionStorage.getItem(REFRESH_TOKEN_KEY),
+  setRefreshToken: (token: string) => sessionStorage.setItem(REFRESH_TOKEN_KEY, token),
   clear: () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem("ebuspass_user");
+    sessionStorage.removeItem(ACCESS_TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem("ebuspass_user");
   },
 };
 
@@ -78,6 +78,18 @@ export const authService = {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Login failed");
+    return data as AuthResponse;
+  },
+
+  adminLogin: async (payload: LoginPayload): Promise<AuthResponse> => {
+    const response = await fetch(ENDPOINTS.AUTH.ADMIN_LOGIN, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Admin login failed");
     return data as AuthResponse;
   },
 

@@ -30,16 +30,16 @@ const TOKEN_KEY = "ebuspass_access_token";
 const REFRESH_TOKEN_KEY = "ebuspass_refresh_token";
 
 export const tokenStorage = {
-  getAccessToken: () => localStorage.getItem(TOKEN_KEY),
-  setAccessToken: (token: string) => localStorage.setItem(TOKEN_KEY, token),
-  getRefreshToken: () => localStorage.getItem(REFRESH_TOKEN_KEY),
+  getAccessToken: () => sessionStorage.getItem(TOKEN_KEY),
+  setAccessToken: (token: string) => sessionStorage.setItem(TOKEN_KEY, token),
+  getRefreshToken: () => sessionStorage.getItem(REFRESH_TOKEN_KEY),
   setRefreshToken: (token: string) =>
-    localStorage.setItem(REFRESH_TOKEN_KEY, token),
+    sessionStorage.setItem(REFRESH_TOKEN_KEY, token),
   clear: () => {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(REFRESH_TOKEN_KEY);
     // Legacy key used in AuthContext — clear it too
-    localStorage.removeItem("ebuspass_user");
+    sessionStorage.removeItem("ebuspass_user");
   },
 };
 

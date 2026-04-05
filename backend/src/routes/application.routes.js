@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { verifyJWT } from "../middlewares/auth.middleware.js";
+import { verifyJWT, requireAdmin } from "../middlewares/auth.middleware.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import saveBasicDetails from "../controllers/basicDetails.controller.js";
 import saveDocumentsUpload from "../controllers/documentsUpload.controllers.js";
@@ -34,7 +34,7 @@ router.route("/:applicationId").put(verifyJWT, updateApplication);
 router.route("/:applicationId").delete(verifyJWT, deleteApplication);
 
 // Admin routes (protected - ideally add admin middleware)
-router.route("/").get(verifyJWT, getAllApplications);
-router.route("/:applicationId/status").put(verifyJWT, updateApplicationStatus);
+router.route("/").get(verifyJWT, requireAdmin, getAllApplications);
+router.route("/:applicationId/status").put(verifyJWT, requireAdmin, updateApplicationStatus);
 
 export default router;
