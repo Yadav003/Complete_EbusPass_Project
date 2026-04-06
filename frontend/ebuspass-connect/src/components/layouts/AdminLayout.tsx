@@ -20,7 +20,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/admin/applications', label: 'Applications', icon: FileText },
     { path: '/admin/colleges', label: 'Colleges', icon: GraduationCap },
-    { path: '/admin/routes', label: 'Routes', icon: MapPin },
   ];
 
   return (
