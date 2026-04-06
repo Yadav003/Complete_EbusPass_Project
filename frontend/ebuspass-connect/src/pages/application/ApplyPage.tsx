@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { User, FileText, MapPin, CreditCard, Check, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useApp, Route } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import StudentLayout from '@/components/layouts/StudentLayout';
 import { applicationService } from '@/services';
+import { collegeService, type College } from '@/services/resources.service';
 import BasicDetails from './BasicDetails';
 import UploadDocuments from './UploadDocuments';
 import RouteSelection from './RouteSelection';
@@ -24,12 +25,14 @@ const steps = [
 const ApplyPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { colleges, routes, addApplication } = useApp();
+  const { routes, addApplication } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
   const [isSavingDocuments, setIsSavingDocuments] = useState(false);
   const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoadingColleges, setIsLoadingColleges] = useState(true);
+  const [colleges, setColleges] = useState<College[]>([]);
   
   const [personalDetails, setPersonalDetails] = useState({
     fullName: user?.name || '',
@@ -55,6 +58,33 @@ const ApplyPage = () => {
 
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadColleges = async () => {
+      try {
+        const data = await collegeService.getColleges();
+        if (isMounted) {
+          setColleges(data);
+        }
+      } catch (error) {
+        if (isMounted) {
+          toast.error(error instanceof Error ? error.message : 'Failed to load colleges');
+        }
+      } finally {
+        if (isMounted) {
+          setIsLoadingColleges(false);
+        }
+      }
+    };
+
+    void loadColleges();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setPersonalDetails({ ...personalDetails, [e.target.name]: e.target.value });
@@ -230,6 +260,7 @@ const ApplyPage = () => {
           <BasicDetails
             personalDetails={personalDetails}
             colleges={colleges}
+            isLoadingColleges={isLoadingColleges}
             onPersonalChange={handlePersonalChange}
           />
         );

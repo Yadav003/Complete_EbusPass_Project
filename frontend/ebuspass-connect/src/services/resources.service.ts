@@ -5,10 +5,7 @@ export interface College {
   _id: string;
   name: string;
   address: string;
-  city: string;
-  state: string;
-  contactEmail?: string;
-  contactPhone?: string;
+  district: string;
 }
 
 export interface Route {
@@ -30,7 +27,24 @@ export interface BusStandLocation {
 }
 
 export const collegeService = {
+  getColleges: async (): Promise<College[]> => {
+    const response = await apiClient.get<{ colleges: College[] }>(ENDPOINTS.COLLEGES.LIST);
+    return response.data.colleges ?? [];
+  },
 
+  createCollege: async (payload: Omit<College, "_id">): Promise<College> => {
+    const response = await apiClient.post<{ college: College }>(ENDPOINTS.COLLEGES.CREATE, payload);
+    return response.data.college;
+  },
+
+  updateCollege: async (id: string, payload: Partial<Omit<College, "_id">>): Promise<College> => {
+    const response = await apiClient.put<{ college: College }>(ENDPOINTS.COLLEGES.UPDATE(id), payload);
+    return response.data.college;
+  },
+
+  deleteCollege: async (id: string): Promise<void> => {
+    await apiClient.delete(ENDPOINTS.COLLEGES.DELETE(id));
+  },
 };
 
 export const routeService = {

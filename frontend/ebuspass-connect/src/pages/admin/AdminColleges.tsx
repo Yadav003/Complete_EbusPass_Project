@@ -1,39 +1,79 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plus, Edit, Trash2, GraduationCap } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { useApp, College } from '@/contexts/AppContext';
+import { collegeService, type College } from '@/services/resources.service';
 import AdminLayout from '@/components/layouts/AdminLayout';
 import { toast } from 'sonner';
 
+const EMPTY_FORM = { name: '', address: '', district: '' };
+
 const AdminColleges = () => {
-  const { colleges, addCollege, updateCollege, deleteCollege } = useApp();
+  const [colleges, setColleges] = useState<College[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingCollegeId, setDeletingCollegeId] = useState<string | null>(null);
   const [showDialog, setShowDialog] = useState(false);
   const [editingCollege, setEditingCollege] = useState<College | null>(null);
-  const [formData, setFormData] = useState({ name: '', address: '', district: '' });
+  const [formData, setFormData] = useState(EMPTY_FORM);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const loadColleges = async () => {
+      try {
+        const data = await collegeService.getColleges();
+        setColleges(data);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'Failed to load colleges';
+        toast.error(message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void loadColleges();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.address || !formData.district) {
+    const payload = {
+      name: formData.name.trim(),
+      address: formData.address.trim(),
+      district: formData.district.trim(),
+    };
+
+    if (!payload.name || !payload.address || !payload.district) {
       toast.error('Please fill all fields');
       return;
     }
 
-    if (editingCollege) {
-      updateCollege(editingCollege.id, formData);
-      toast.success('College updated successfully');
-    } else {
-      addCollege(formData);
-      toast.success('College added successfully');
-    }
+    try {
+      setIsSubmitting(true);
 
-    setFormData({ name: '', address: '', district: '' });
-    setEditingCollege(null);
-    setShowDialog(false);
+      if (editingCollege) {
+        const updatedCollege = await collegeService.updateCollege(editingCollege._id, payload);
+        setColleges((prevColleges) =>
+          prevColleges.map((college) => (college._id === updatedCollege._id ? updatedCollege : college)),
+        );
+        toast.success('College updated successfully');
+      } else {
+        const createdCollege = await collegeService.createCollege(payload);
+        setColleges((prevColleges) => [createdCollege, ...prevColleges]);
+        toast.success('College added successfully');
+      }
+
+      setFormData(EMPTY_FORM);
+      setEditingCollege(null);
+      setShowDialog(false);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save college';
+      toast.error(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleEdit = (college: College) => {
@@ -42,17 +82,28 @@ const AdminColleges = () => {
     setShowDialog(true);
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this college?')) {
-      deleteCollege(id);
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this college?')) {
+      return;
+    }
+
+    try {
+      setDeletingCollegeId(id);
+      await collegeService.deleteCollege(id);
+      setColleges((prevColleges) => prevColleges.filter((college) => college._id !== id));
       toast.success('College deleted');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to delete college';
+      toast.error(message);
+    } finally {
+      setDeletingCollegeId(null);
     }
   };
 
   const handleDialogClose = () => {
     setShowDialog(false);
     setEditingCollege(null);
-    setFormData({ name: '', address: '', district: '' });
+    setFormData(EMPTY_FORM);
   };
 
   return (
@@ -63,7 +114,7 @@ const AdminColleges = () => {
         transition={{ duration: 0.5 }}
       >
         <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
+          <div className='mt-4'>
             <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
               College Management
             </h1>
@@ -73,7 +124,7 @@ const AdminColleges = () => {
           </div>
           <Dialog open={showDialog} onOpenChange={setShowDialog}>
             <DialogTrigger asChild>
-              <Button onClick={() => { setEditingCollege(null); setFormData({ name: '', address: '', district: '' }); }}>
+              <Button onClick={() => { setEditingCollege(null); setFormData(EMPTY_FORM); }}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add College
               </Button>
@@ -114,7 +165,7 @@ const AdminColleges = () => {
                   <Button type="button" variant="outline" onClick={handleDialogClose} className="flex-1">
                     Cancel
                   </Button>
-                  <Button type="submit" className="flex-1">
+                  <Button type="submit" className="flex-1" disabled={isSubmitting}>
                     {editingCollege ? 'Update' : 'Add'} College
                   </Button>
                 </div>
@@ -124,10 +175,16 @@ const AdminColleges = () => {
         </div>
 
         {/* Colleges Grid */}
+        {isLoading ? (
+          <p className="text-muted-foreground">Loading colleges...</p>
+        ) : colleges.length === 0 ? (
+          <p className="text-muted-foreground">No colleges found. Add your first college.</p>
+        ) : null}
+
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {colleges.map((college, index) => (
             <motion.div
-              key={college.id}
+              key={college._id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -149,7 +206,13 @@ const AdminColleges = () => {
                       <Edit className="w-4 h-4 mr-1" />
                       Edit
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => handleDelete(college.id)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      disabled={deletingCollegeId === college._id}
+                      onClick={() => handleDelete(college._id)}
+                    >
                       <Trash2 className="w-4 h-4" />
                     </Button>
                   </div>

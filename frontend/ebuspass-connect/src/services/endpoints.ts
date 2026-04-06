@@ -30,7 +30,12 @@ export const ENDPOINTS = {
     UPDATE_STATUS: (id: string) => `${API_V1}/applications/${id}/status`,
   },
 
-  COLLEGES: {},
+  COLLEGES: {
+    LIST: `${API_V1}/colleges`,
+    CREATE: `${API_V1}/colleges`,
+    UPDATE: (id: string) => `${API_V1}/colleges/${id}`,
+    DELETE: (id: string) => `${API_V1}/colleges/${id}`,
+  },
 
   ROUTES: {},
 

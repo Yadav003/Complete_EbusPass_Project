@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { College } from '@/contexts/AppContext';
+import { type College } from '@/services/resources.service';
 
 interface PersonalDetails {
   fullName: string;
@@ -19,10 +19,16 @@ interface PersonalDetails {
 interface BasicDetailsProps {
   personalDetails: PersonalDetails;
   colleges: College[];
+  isLoadingColleges: boolean;
   onPersonalChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => void;
 }
 
-const BasicDetails: React.FC<BasicDetailsProps> = ({ personalDetails, colleges, onPersonalChange }) => {
+const BasicDetails: React.FC<BasicDetailsProps> = ({
+  personalDetails,
+  colleges,
+  isLoadingColleges,
+  onPersonalChange,
+}) => {
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -60,7 +66,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ personalDetails, colleges, 
             onChange={onPersonalChange}
             className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
           >
-            <option value="">Select Gender</option>
+            <option value="" disabled>Select Gender</option>
             <option value="male">Male</option>
             <option value="female">Female</option>
             <option value="other">Other</option>
@@ -74,6 +80,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ personalDetails, colleges, 
             value={personalDetails.mobile}
             onChange={onPersonalChange}
             placeholder="Enter mobile number"
+            maxLength={10}
           />
         </div>
         <div className="space-y-2 md:col-span-2">
@@ -105,11 +112,18 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ personalDetails, colleges, 
             name="collegeName"
             value={personalDetails.collegeName}
             onChange={onPersonalChange}
+            disabled={isLoadingColleges}
             className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
           >
-            <option value="">Select College</option>
+            <option value="" disabled>
+              {isLoadingColleges
+                ? 'Loading colleges...'
+                : colleges.length > 0
+                  ? 'Select College'
+                  : 'No colleges available'}
+            </option>
             {colleges.map(college => (
-              <option key={college.id} value={college.name}>{college.name}</option>
+              <option key={college._id} value={college.name}>{college.name}</option>
             ))}
           </select>
         </div>
@@ -132,7 +146,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({ personalDetails, colleges, 
             onChange={onPersonalChange}
             className="flex h-11 w-full rounded-lg border-2 border-input bg-card px-4 py-2 text-sm"
           >
-            <option value="">Select Year</option>
+            <option value="" disabled>Select Year</option>
             <option value="1st Year">1st Year</option>
             <option value="2nd Year">2nd Year</option>
             <option value="3rd Year">3rd Year</option>
