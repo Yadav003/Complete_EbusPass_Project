@@ -9,7 +9,7 @@ const applicationSchema = new Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "under_review", "approved", "rejected"],
+      enum: ["pending", "pay_pending", "under_review", "approved", "rejected"],
       default: "pending",
     },
     personalDetails: {

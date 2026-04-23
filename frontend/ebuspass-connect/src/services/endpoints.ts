@@ -29,6 +29,7 @@ export const ENDPOINTS = {
     GET_ALL: `${API_V1}/applications`,
     GET_BY_ID: (id: string) => `${API_V1}/applications/${id}`,
     UPDATE: (id: string) => `${API_V1}/applications/${id}`,
+    UPDATE_PAYMENT: (id: string) => `${API_V1}/applications/${id}/payment`,
     DELETE: (id: string) => `${API_V1}/applications/${id}`,
     UPDATE_STATUS: (id: string) => `${API_V1}/applications/${id}/status`,
   },

@@ -1,46 +1,103 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, CheckCircle, XCircle, Search, Filter } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Eye, CheckCircle, XCircle, Search, Database } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { useApp } from '@/contexts/AppContext';
-import { Application } from '@/contexts/AuthContext';
+import { applicationService, type AdminApplication, type AdminApplicationStatus } from '@/services/application.service';
 import AdminLayout from '@/components/layouts/AdminLayout';
 import { toast } from 'sonner';
 
 const AdminApplications = () => {
-  const { applications, updateApplication, routes } = useApp();
+  const [applications, setApplications] = useState<AdminApplication[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [updatingApplicationId, setUpdatingApplicationId] = useState<string | null>(null);
+  const [totalApplicationsInDb, setTotalApplicationsInDb] = useState(0);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [statusFilter, setStatusFilter] = useState<'all' | AdminApplicationStatus>('all');
+  const [selectedApp, setSelectedApp] = useState<AdminApplication | null>(null);
   const [showDetails, setShowDetails] = useState(false);
 
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = 
-      app.personalDetails.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.personalDetails.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      app.id.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const loadDbTotals = useCallback(async () => {
+    try {
+      const response = await applicationService.getAllApplicationsForAdmin({ page: 1, limit: 1 });
+      setTotalApplicationsInDb(response.pagination.total);
+    } catch {
+      // Keep page functional even if totals fail to load.
+    }
+  }, []);
+
+  const loadApplications = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await applicationService.getAllApplicationsForAdmin({
+        status: statusFilter === 'all' ? undefined : statusFilter,
+        page: 1,
+        limit: 200,
+      });
+      setApplications(response.applications);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to load applications';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [statusFilter]);
+
+  useEffect(() => {
+    void loadDbTotals();
+  }, [loadDbTotals]);
+
+  useEffect(() => {
+    void loadApplications();
+  }, [loadApplications]);
+
+  const filteredApplications = useMemo(() => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+
+    return applications.filter((app) => {
+      if (!normalizedSearch) {
+        return true;
+      }
+
+      return (
+        app.personalDetails.fullName.toLowerCase().includes(normalizedSearch) ||
+        app.personalDetails.email.toLowerCase().includes(normalizedSearch) ||
+        app._id.toLowerCase().includes(normalizedSearch)
+      );
+    });
+  }, [applications, searchTerm]);
+
+  const handleUpdateStatus = async (applicationId: string, status: AdminApplicationStatus) => {
+    try {
+      setUpdatingApplicationId(applicationId);
+      await applicationService.updateApplicationStatus(applicationId, status);
+      toast.success(`Application ${status === 'approved' ? 'approved' : 'rejected'} successfully`);
+      setShowDetails(false);
+      await loadApplications();
+      await loadDbTotals();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to update application status';
+      toast.error(message);
+    } finally {
+      setUpdatingApplicationId(null);
+    }
+  };
 
   const handleApprove = (appId: string) => {
-    updateApplication(appId, { status: 'approved' });
-    toast.success('Application approved successfully!');
-    setShowDetails(false);
+    void handleUpdateStatus(appId, 'approved');
   };
 
   const handleReject = (appId: string) => {
-    updateApplication(appId, { status: 'rejected' });
-    toast.error('Application rejected');
-    setShowDetails(false);
+    void handleUpdateStatus(appId, 'rejected');
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
+      case 'pay_pending':
+        return <Badge variant="pending">Pay Pending</Badge>;
       case 'approved':
         return <Badge variant="approved">Approved</Badge>;
       case 'rejected':
@@ -65,9 +122,39 @@ const AdminApplications = () => {
               Applications
             </h1>
             <p className="text-muted-foreground">
-              Manage and review student bus pass applications
+              Manage and review student bus pass applications from the database
             </p>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <Card>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground">Total Applications in DB</p>
+                  <p className="text-2xl font-semibold">{totalApplicationsInDb}</p>
+                </div>
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-primary" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Loaded Records</p>
+              <p className="text-2xl font-semibold">{applications.length}</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Search Results</p>
+              <p className="text-2xl font-semibold">{filteredApplications.length}</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -85,10 +172,11 @@ const AdminApplications = () => {
               </div>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => setStatusFilter(e.target.value as 'all' | AdminApplicationStatus)}
                 className="h-11 rounded-lg border-2 border-input bg-card px-4 text-sm"
               >
                 <option value="all">All Status</option>
+                <option value="pay_pending">Pay Pending</option>
                 <option value="pending">Pending</option>
                 <option value="under_review">Under Review</option>
                 <option value="approved">Approved</option>
@@ -101,7 +189,11 @@ const AdminApplications = () => {
         {/* Applications Table */}
         <Card>
           <CardContent className="p-0">
-            {filteredApplications.length === 0 ? (
+            {isLoading ? (
+              <div className="text-center py-12 text-muted-foreground">
+                Loading applications...
+              </div>
+            ) : filteredApplications.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground">
                 No applications found
               </div>
@@ -121,10 +213,9 @@ const AdminApplications = () => {
                   </thead>
                   <tbody>
                     {filteredApplications.map(app => {
-                      const route = routes.find(r => r.id === app.route.routeId);
                       return (
-                        <tr key={app.id} className="border-b hover:bg-muted/50 transition-colors">
-                          <td className="py-4 px-4 font-mono text-xs">{app.id}</td>
+                        <tr key={app._id} className="border-b hover:bg-muted/50 transition-colors">
+                          <td className="py-4 px-4 font-mono text-xs">{app._id}</td>
                           <td className="py-4 px-4">
                             <div>
                               <div className="font-medium">{app.personalDetails.fullName}</div>
@@ -132,7 +223,7 @@ const AdminApplications = () => {
                             </div>
                           </td>
                           <td className="py-4 px-4">{app.personalDetails.collegeName}</td>
-                          <td className="py-4 px-4">{route?.name || 'N/A'}</td>
+                          <td className="py-4 px-4">{app.route.source} → {app.route.destination}</td>
                           <td className="py-4 px-4 font-medium">₹{app.payment.amount}</td>
                           <td className="py-4 px-4">{getStatusBadge(app.status)}</td>
                           <td className="py-4 px-4">
@@ -153,7 +244,8 @@ const AdminApplications = () => {
                                     size="sm"
                                     variant="ghost"
                                     className="text-success hover:text-success"
-                                    onClick={() => handleApprove(app.id)}
+                                    disabled={updatingApplicationId === app._id}
+                                    onClick={() => handleApprove(app._id)}
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                   </Button>
@@ -161,7 +253,8 @@ const AdminApplications = () => {
                                     size="sm"
                                     variant="ghost"
                                     className="text-destructive hover:text-destructive"
-                                    onClick={() => handleReject(app.id)}
+                                    disabled={updatingApplicationId === app._id}
+                                    onClick={() => handleReject(app._id)}
                                   >
                                     <XCircle className="w-4 h-4" />
                                   </Button>
@@ -190,7 +283,7 @@ const AdminApplications = () => {
             {selectedApp && (
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
-                  <span className="font-mono text-sm text-muted-foreground">{selectedApp.id}</span>
+                  <span className="font-mono text-sm text-muted-foreground">{selectedApp._id}</span>
                   {getStatusBadge(selectedApp.status)}
                 </div>
 
@@ -264,11 +357,11 @@ const AdminApplications = () => {
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Method</span>
-                        <span>{selectedApp.payment.method}</span>
+                        <span>{selectedApp.payment.method || 'N/A'}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Transaction ID</span>
-                        <span className="font-mono text-xs">{selectedApp.payment.transactionId}</span>
+                        <span className="font-mono text-xs">{selectedApp.payment.transactionId || 'N/A'}</span>
                       </div>
                     </div>
                   </div>
@@ -297,7 +390,8 @@ const AdminApplications = () => {
                     <Button
                       className="flex-1"
                       variant="success"
-                      onClick={() => handleApprove(selectedApp.id)}
+                      disabled={updatingApplicationId === selectedApp._id}
+                      onClick={() => handleApprove(selectedApp._id)}
                     >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve
@@ -305,7 +399,8 @@ const AdminApplications = () => {
                     <Button
                       className="flex-1"
                       variant="destructive"
-                      onClick={() => handleReject(selectedApp.id)}
+                      disabled={updatingApplicationId === selectedApp._id}
+                      onClick={() => handleReject(selectedApp._id)}
                     >
                       <XCircle className="w-4 h-4 mr-2" />
                       Reject

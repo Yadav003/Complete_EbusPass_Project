@@ -7,7 +7,7 @@ export { authService } from "./auth.service";
 export type { AuthUser, LoginPayload, RegisterPayload, AuthResponse } from "./auth.service";
 
 export { applicationService } from "./application.service";
-export type { Application, ApplicationStatus, CreateApplicationPayload } from "./application.service";
+export type { Application, ApplicationStatus, CreateApplicationPayload, CreateApplicationRequest } from "./application.service";
 
 export { adminService } from "./admin.service";
 export type { DashboardStats, AdminUser, UsersSummary } from "./admin.service";

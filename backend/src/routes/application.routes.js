@@ -9,6 +9,7 @@ import { getApplicationById, getAllApplications } from "../controllers/applicati
 import {
 	createApplication,
 	updateApplication,
+	completeApplicationPayment,
 	deleteApplication,
 	updateApplicationStatus,
 } from "../controllers/application/applicationhandling.controller.js";
@@ -31,6 +32,7 @@ router.route("/create").post(verifyJWT, createApplication);
 router.route("/my-applications").get(verifyJWT, getUserApplications);
 router.route("/:applicationId").get(verifyJWT, getApplicationById);
 router.route("/:applicationId").put(verifyJWT, updateApplication);
+router.route("/:applicationId/payment").put(verifyJWT, completeApplicationPayment);
 router.route("/:applicationId").delete(verifyJWT, deleteApplication);
 
 // Admin routes (protected - ideally add admin middleware)

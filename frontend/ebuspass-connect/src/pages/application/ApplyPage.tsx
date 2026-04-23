@@ -8,7 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApp, Route } from '@/contexts/AppContext';
 import { toast } from 'sonner';
 import StudentLayout from '@/components/layouts/StudentLayout';
-import { applicationService } from '@/services';
+import { applicationService, type CreateApplicationRequest } from '@/services';
 import { collegeService, type College } from '@/services/resources.service';
 import BasicDetails from './BasicDetails';
 import UploadDocuments from './UploadDocuments';
@@ -25,7 +25,7 @@ const steps = [
 const ApplyPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { routes, addApplication } = useApp();
+  const { routes } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
   const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
   const [isSavingDocuments, setIsSavingDocuments] = useState(false);
@@ -58,6 +58,12 @@ const ApplyPage = () => {
 
   const [selectedRoute, setSelectedRoute] = useState<Route | null>(null);
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [draftApplicationId, setDraftApplicationId] = useState<string | null>(null);
+  const [uploadedDocumentUrls, setUploadedDocumentUrls] = useState<{
+    aadhaar: string;
+    collegeId: string;
+    photo: string;
+  } | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -164,11 +170,25 @@ const ApplyPage = () => {
 
       try {
         setIsSavingDocuments(true);
-        await applicationService.saveDocumentsUpload({
+        const response = await applicationService.saveDocumentsUpload({
           aadhaar: documents.aadhaar,
           collegeId: documents.collegeId,
           photo: documents.photo,
         });
+
+        const uploadedDocuments = response?.documentsUpload?.documents;
+        if (
+          uploadedDocuments?.aadhaar?.url &&
+          uploadedDocuments?.collegeId?.url &&
+          uploadedDocuments?.photo?.url
+        ) {
+          setUploadedDocumentUrls({
+            aadhaar: uploadedDocuments.aadhaar.url,
+            collegeId: uploadedDocuments.collegeId.url,
+            photo: uploadedDocuments.photo.url,
+          });
+        }
+
         setCurrentStep(prev => Math.min(prev + 1, 4));
         toast.success('Documents uploaded successfully');
       } catch (error) {
@@ -197,9 +217,36 @@ const ApplyPage = () => {
           destination: selectedRoute.destination,
           distance: selectedRoute.distance,
           fare: selectedRoute.totalFare,
+          routeId: selectedRoute.id,
         });
+
+        const monthlyAmount = selectedRoute.totalFare * 30;
+
+        const applicationPayload: CreateApplicationRequest = {
+          personalDetails,
+          documents: {
+            aadhaar: uploadedDocumentUrls?.aadhaar ?? documents.aadhaar?.name ?? '',
+            collegeId: uploadedDocumentUrls?.collegeId ?? documents.collegeId?.name ?? '',
+            photo: uploadedDocumentUrls?.photo ?? documents.photo?.name ?? '',
+          },
+          route: {
+            source: selectedRoute.source,
+            destination: selectedRoute.destination,
+            distance: selectedRoute.distance,
+            fare: monthlyAmount,
+            routeId: selectedRoute.id,
+          },
+          payment: {
+            status: 'pending',
+            amount: monthlyAmount,
+          },
+        };
+
+        const createdApplication = await applicationService.createApplication(applicationPayload);
+        setDraftApplicationId(createdApplication._id);
+
         setCurrentStep(prev => Math.min(prev + 1, 4));
-        toast.success('Route selection saved successfully');
+        toast.success('Application saved with payment pending status');
       } catch (error) {
         toast.error(error instanceof Error ? error.message : 'Failed to save route selection');
       } finally {
@@ -216,41 +263,33 @@ const ApplyPage = () => {
   };
 
   const handlePayment = async () => {
-    if (!validateStep(4) || !user || !selectedRoute) return;
+    if (!validateStep(4) || !user || !selectedRoute || !draftApplicationId) {
+      if (!draftApplicationId) {
+        toast.error('Please complete previous steps to create your application first');
+      }
+      return;
+    }
     
     setIsProcessing(true);
     
-    // Simulate payment processing
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    addApplication({
-      userId: user.id,
-      status: 'under_review',
-      personalDetails,
-      documents: {
-        aadhaar: documents.aadhaar?.name,
-        collegeId: documents.collegeId?.name,
-        photo: documents.photo?.name
-      },
-      route: {
-        source: selectedRoute.source,
-        destination: selectedRoute.destination,
-        distance: selectedRoute.distance,
-        fare: selectedRoute.totalFare * 30, // Monthly fare
-        routeId: selectedRoute.id
-      },
-      payment: {
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      await applicationService.completeApplicationPayment(draftApplicationId, {
         status: 'completed',
         amount: selectedRoute.totalFare * 30,
         transactionId: `TXN${Date.now()}`,
-        method: paymentMethod,
-        date: new Date().toISOString()
-      }
-    });
-    
-    setIsProcessing(false);
-    toast.success('Application submitted successfully!');
-    navigate('/dashboard');
+        method: paymentMethod as 'UPI' | 'Debit Card' | 'Credit Card' | 'Net Banking',
+        date: new Date().toISOString(),
+      });
+
+      toast.success('Payment successful. Application is now under review.');
+      navigate('/dashboard');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to complete payment');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const renderStepContent = () => {

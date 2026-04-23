@@ -25,7 +25,7 @@ const createApplication = asyncHandler(async (req, res) => {
     documents: normalizedDocuments,
     route: normalizedRoute,
     payment: normalizedPayment,
-    status: normalizedPayment.status === "completed" ? "under_review" : "pending",
+    status: normalizedPayment.status === "completed" ? "under_review" : "pay_pending",
   });
 
   if (!application) {
@@ -40,7 +40,7 @@ const createApplication = asyncHandler(async (req, res) => {
 
 const updateApplication = asyncHandler(async (req, res) => {
   const { applicationId } = req.params;
-  const { personalDetails, documents, route } = req.body;
+  const { personalDetails, documents, route, payment } = req.body;
   const userId = req.user?._id;
 
   if (!applicationId) {
@@ -57,9 +57,11 @@ const updateApplication = asyncHandler(async (req, res) => {
     throw new ApiError(403, "You are not authorized to update this application");
   }
 
-  if (!["pending", "rejected"].includes(application.status)) {
+  if (!["pending", "pay_pending", "rejected"].includes(application.status)) {
     throw new ApiError(400, "Cannot update application with current status");
   }
+
+  const normalizedPayment = payment ? validatePaymentDetails(payment) : undefined;
 
   const updatedApplication = await Application.findByIdAndUpdate(
     applicationId,
@@ -67,6 +69,10 @@ const updateApplication = asyncHandler(async (req, res) => {
       ...(personalDetails && { personalDetails }),
       ...(documents && { documents }),
       ...(route && { route }),
+      ...(normalizedPayment && {
+        payment: normalizedPayment,
+        status: normalizedPayment.status === "completed" ? "under_review" : "pay_pending",
+      }),
     },
     { new: true }
   );
@@ -74,6 +80,38 @@ const updateApplication = asyncHandler(async (req, res) => {
   return res.status(200).json({
     message: "Application updated successfully",
     application: updatedApplication,
+  });
+});
+
+const completeApplicationPayment = asyncHandler(async (req, res) => {
+  const { applicationId } = req.params;
+  const userId = req.user?._id;
+  const paymentPayload = req.body.payment ?? req.body;
+
+  if (!applicationId) {
+    throw new ApiError(400, "Application ID is required");
+  }
+
+  const application = await Application.findById(applicationId);
+
+  if (!application) {
+    throw new ApiError(404, "Application not found");
+  }
+
+  if (application.userId.toString() !== userId.toString()) {
+    throw new ApiError(403, "You are not authorized to update payment for this application");
+  }
+
+  const normalizedPayment = validatePaymentDetails(paymentPayload);
+
+  application.payment = normalizedPayment;
+  application.status = normalizedPayment.status === "completed" ? "under_review" : "pay_pending";
+
+  await application.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: "Application payment updated successfully",
+    application,
   });
 });
 
@@ -114,7 +152,7 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Application ID is required");
   }
 
-  if (!status || !["pending", "under_review", "approved", "rejected"].includes(status)) {
+  if (!status || !["pending", "pay_pending", "under_review", "approved", "rejected"].includes(status)) {
     throw new ApiError(400, "Valid status is required");
   }
 
@@ -144,6 +182,7 @@ const updateApplicationStatus = asyncHandler(async (req, res) => {
 export {
   createApplication,
   updateApplication,
+  completeApplicationPayment,
   deleteApplication,
   updateApplicationStatus,
 };
