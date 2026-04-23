@@ -10,7 +10,7 @@ export { applicationService } from "./application.service";
 export type { Application, ApplicationStatus, CreateApplicationPayload } from "./application.service";
 
 export { adminService } from "./admin.service";
-export type { DashboardStats } from "./admin.service";
+export type { DashboardStats, AdminUser, UsersSummary } from "./admin.service";
 
 export { collegeService, routeService, locationService } from "./resources.service";
 export type { College, Route, BusStandLocation } from "./resources.service";

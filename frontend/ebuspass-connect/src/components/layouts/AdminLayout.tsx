@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Bus, LayoutDashboard, Users, MapPin, GraduationCap, FileText, LogOut, Shield } from 'lucide-react';
+import { LayoutDashboard, Users, GraduationCap, FileText, LogOut, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -18,6 +18,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
 
   const navItems = [
     { path: '/admin/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/admin/users', label: 'Users', icon: Users },
     { path: '/admin/applications', label: 'Applications', icon: FileText },
     { path: '/admin/colleges', label: 'Colleges', icon: GraduationCap },
   ];

@@ -44,4 +44,55 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
-export { registerUser };
+const getAllUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({})
+    .select("-password -refreshToken")
+    .sort({ createdAt: -1 })
+    .lean();
+
+  const totalUsers = users.length;
+  const totalAdmins = users.filter((user) => user.role === "admin").length;
+  const totalStudents = users.filter((user) => user.role === "student").length;
+
+  return res.status(200).json({
+    users,
+    summary: {
+      totalUsers,
+      totalAdmins,
+      totalStudents,
+    },
+  });
+});
+
+const updateUserRole = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { role } = req.body;
+
+  if (!id) {
+    throw new ApiError(400, "User id is required");
+  }
+
+  if (!["student", "admin"].includes(role)) {
+    throw new ApiError(400, "Role must be either 'student' or 'admin'");
+  }
+
+  if (String(req.user?._id) === String(id)) {
+    throw new ApiError(400, "You cannot change your own role");
+  }
+
+  const user = await User.findById(id).select("-password -refreshToken");
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  user.role = role;
+  await user.save({ validateBeforeSave: false });
+
+  return res.status(200).json({
+    message: "User role updated successfully",
+    user,
+  });
+});
+
+export { registerUser, getAllUsers, updateUserRole };

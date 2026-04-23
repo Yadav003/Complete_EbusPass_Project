@@ -15,7 +15,10 @@ export const ENDPOINTS = {
   },
 
   
-  ADMIN: {},
+  ADMIN: {
+    USERS: `${API_V1}/users`,
+    UPDATE_USER_ROLE: (id: string) => `${API_V1}/users/${id}/role`,
+  },
 
   APPLICATIONS: {
     BASIC_DETAILS: `${API_V1}/applications/basic-details`,
