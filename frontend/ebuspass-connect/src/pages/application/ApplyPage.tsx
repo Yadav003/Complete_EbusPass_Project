@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
 import { User, FileText, MapPin, CreditCard, Check, ArrowLeft, ArrowRight } from 'lucide-react';
@@ -22,17 +22,35 @@ const steps = [
   { id: 4, title: 'Payment', icon: CreditCard },
 ];
 
+const formatDateForInput = (value: string | Date | undefined) => {
+  if (!value) {
+    return '';
+  }
+
+  const parsedDate = new Date(value);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return '';
+  }
+
+  return parsedDate.toISOString().slice(0, 10);
+};
+
 const ApplyPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { routes } = useApp();
   const [currentStep, setCurrentStep] = useState(1);
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [isPaymentResumeOnly, setIsPaymentResumeOnly] = useState(false);
   const [isSavingBasicDetails, setIsSavingBasicDetails] = useState(false);
   const [isSavingDocuments, setIsSavingDocuments] = useState(false);
   const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoadingColleges, setIsLoadingColleges] = useState(true);
+  const [shouldLoadColleges, setShouldLoadColleges] = useState(false);
+  const [draftProgressPercent, setDraftProgressPercent] = useState(0);
   const [colleges, setColleges] = useState<College[]>([]);
+  const hasLoadedDraftProgress = useRef(false);
   
   const [personalDetails, setPersonalDetails] = useState({
     fullName: user?.name || '',
@@ -65,10 +83,59 @@ const ApplyPage = () => {
     photo: string;
   } | null>(null);
 
+  const createSyntheticRoute = useCallback((
+    source: string,
+    destination: string,
+    distance: number,
+    totalFare: number,
+    routeId?: string,
+  ): Route => {
+    const matchedRoute = routes.find((routeItem) => {
+      if (routeId && routeItem.id === routeId) {
+        return true;
+      }
+
+      return routeItem.source === source && routeItem.destination === destination;
+    });
+
+    if (matchedRoute) {
+      return {
+        ...matchedRoute,
+        totalFare,
+        distance,
+      };
+    }
+
+    return {
+      id: routeId || `saved-${source}-${destination}`.toLowerCase().replace(/\s+/g, '-'),
+      name: `${source} - ${destination}`,
+      source,
+      destination,
+      stops: [],
+      distance,
+      farePerKm: distance > 0 ? Number((totalFare / distance).toFixed(2)) : 0,
+      totalFare,
+    };
+  }, [routes]);
+
+  const setApplyBlockUntil = (application: { passValidityEnd?: string; passValidityStart?: string; createdAt: string }) => {
+    const blockUntil = application.passValidityEnd
+      ? new Date(application.passValidityEnd)
+      : application.passValidityStart
+        ? new Date(new Date(application.passValidityStart).getTime() + 90 * 24 * 60 * 60 * 1000)
+        : new Date(new Date(application.createdAt).getTime() + 90 * 24 * 60 * 60 * 1000);
+
+    sessionStorage.setItem('ebuspass_apply_block_until', blockUntil.toISOString());
+  };
+
   useEffect(() => {
     let isMounted = true;
 
     const loadColleges = async () => {
+      if (!shouldLoadColleges) {
+        return;
+      }
+
       try {
         const data = await collegeService.getColleges();
         if (isMounted) {
@@ -90,7 +157,140 @@ const ApplyPage = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [shouldLoadColleges]);
+
+  useEffect(() => {
+    if (hasLoadedDraftProgress.current) {
+      return undefined;
+    }
+
+    hasLoadedDraftProgress.current = true;
+    let isMounted = true;
+
+    const loadDraftProgress = async () => {
+      if (!user) {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+        return;
+      }
+
+      try {
+        const draftProgress = await applicationService.getDraftProgress();
+
+        if (!isMounted) {
+          return;
+        }
+
+        setDraftProgressPercent(draftProgress.progress.progressPercent);
+
+        const activeApplication = draftProgress.activeApplication;
+        if (activeApplication && activeApplication.status !== 'rejected') {
+          if (activeApplication.status !== 'pay_pending') {
+            if (activeApplication.status === 'approved') {
+              setApplyBlockUntil(activeApplication);
+              toast.error('You can apply only once right now. You can apply again when your pass expires.');
+            } else {
+              toast.error('You already have an active application. You can apply again only after rejection.');
+            }
+            navigate('/dashboard');
+            return;
+          }
+
+          setIsPaymentResumeOnly(true);
+          setDraftApplicationId(activeApplication._id);
+          setCurrentStep(4);
+
+          setPersonalDetails({
+            fullName: activeApplication.personalDetails.fullName || user.name || '',
+            dob: formatDateForInput(activeApplication.personalDetails.dob),
+            gender: activeApplication.personalDetails.gender || '',
+            mobile: activeApplication.personalDetails.mobile || user.mobile || '',
+            email: activeApplication.personalDetails.email || user.email || '',
+            address: activeApplication.personalDetails.address || '',
+            collegeName: activeApplication.personalDetails.collegeName || '',
+            course: activeApplication.personalDetails.course || '',
+            yearSemester: activeApplication.personalDetails.yearSemester || '',
+          });
+
+          if (
+            activeApplication.documents.aadhaar &&
+            activeApplication.documents.collegeId &&
+            activeApplication.documents.photo
+          ) {
+            setUploadedDocumentUrls({
+              aadhaar: activeApplication.documents.aadhaar,
+              collegeId: activeApplication.documents.collegeId,
+              photo: activeApplication.documents.photo,
+            });
+          }
+
+          const monthlyFare = Number(activeApplication.route.fare || 0);
+          const normalizedDailyFare = monthlyFare > 0 ? monthlyFare / 30 : 0;
+
+          setSelectedRoute(
+            createSyntheticRoute(
+              activeApplication.route.source,
+              activeApplication.route.destination,
+              Number(activeApplication.route.distance || 0),
+              normalizedDailyFare,
+              activeApplication.route.routeId,
+            ),
+          );
+
+          return;
+        }
+
+        if (isMounted) {
+          setShouldLoadColleges(true);
+        }
+
+        if (draftProgress.draft.basicDetails) {
+          setPersonalDetails((previous) => ({
+            ...previous,
+            ...draftProgress.draft.basicDetails,
+            dob: formatDateForInput(draftProgress.draft.basicDetails.dob),
+          }));
+        }
+
+        if (draftProgress.draft.documents.completed) {
+          setUploadedDocumentUrls({
+            aadhaar: draftProgress.draft.documents.aadhaarUrl,
+            collegeId: draftProgress.draft.documents.collegeIdUrl,
+            photo: draftProgress.draft.documents.photoUrl,
+          });
+        }
+
+        if (draftProgress.draft.routeSelection) {
+          setSelectedRoute(
+            createSyntheticRoute(
+              draftProgress.draft.routeSelection.source,
+              draftProgress.draft.routeSelection.destination,
+              Number(draftProgress.draft.routeSelection.distance || 0),
+              Number(draftProgress.draft.routeSelection.fare || 0),
+              draftProgress.draft.routeSelection.routeId,
+            ),
+          );
+        }
+
+        if (draftProgress.progress.resumeStep) {
+          setCurrentStep(draftProgress.progress.resumeStep);
+        }
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Failed to load saved application progress');
+      } finally {
+        if (isMounted) {
+          setIsInitializing(false);
+        }
+      }
+    };
+
+    void loadDraftProgress();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [createSyntheticRoute, navigate, user]);
 
   const handlePersonalChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setPersonalDetails({ ...personalDetails, [e.target.name]: e.target.value });
@@ -111,7 +311,10 @@ const ApplyPage = () => {
         return true;
       }
       case 2:
-        if (!documents.aadhaar || !documents.collegeId || !documents.photo) {
+        if (
+          !(uploadedDocumentUrls?.aadhaar && uploadedDocumentUrls?.collegeId && uploadedDocumentUrls?.photo) &&
+          (!documents.aadhaar || !documents.collegeId || !documents.photo)
+        ) {
           toast.error('Please upload all required documents');
           return false;
         }
@@ -134,6 +337,10 @@ const ApplyPage = () => {
   };
 
   const nextStep = async () => {
+    if (isPaymentResumeOnly) {
+      return;
+    }
+
     if (!validateStep(currentStep)) {
       return;
     }
@@ -163,7 +370,22 @@ const ApplyPage = () => {
         return;
       }
 
-      if (!documents.aadhaar || !documents.collegeId || !documents.photo) {
+      const hasStoredDocuments = Boolean(
+        uploadedDocumentUrls?.aadhaar &&
+          uploadedDocumentUrls?.collegeId &&
+          uploadedDocumentUrls?.photo,
+      );
+
+      const hasAllNewDocuments = Boolean(documents.aadhaar && documents.collegeId && documents.photo);
+      const hasAnyNewDocument = Boolean(documents.aadhaar || documents.collegeId || documents.photo);
+
+      if (hasStoredDocuments && !hasAnyNewDocument) {
+        setCurrentStep(prev => Math.min(prev + 1, 4));
+        toast.success('Using your previously uploaded documents');
+        return;
+      }
+
+      if (!hasAllNewDocuments) {
         toast.error('Please upload all required documents');
         return;
       }
@@ -222,6 +444,11 @@ const ApplyPage = () => {
 
         const monthlyAmount = selectedRoute.totalFare * 30;
 
+        if (draftApplicationId) {
+          setCurrentStep(prev => Math.min(prev + 1, 4));
+          return;
+        }
+
         const applicationPayload: CreateApplicationRequest = {
           personalDetails,
           documents: {
@@ -259,6 +486,10 @@ const ApplyPage = () => {
   };
 
   const prevStep = () => {
+    if (isPaymentResumeOnly) {
+      return;
+    }
+
     setCurrentStep(prev => Math.max(prev - 1, 1));
   };
 
@@ -273,11 +504,11 @@ const ApplyPage = () => {
     setIsProcessing(true);
     
     try {
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const paymentAmount = selectedRoute.totalFare * 30;
 
       await applicationService.completeApplicationPayment(draftApplicationId, {
         status: 'completed',
-        amount: selectedRoute.totalFare * 30,
+        amount: paymentAmount,
         transactionId: `TXN${Date.now()}`,
         method: paymentMethod as 'UPI' | 'Debit Card' | 'Credit Card' | 'Net Banking',
         date: new Date().toISOString(),
@@ -335,9 +566,32 @@ const ApplyPage = () => {
     }
   };
 
+  if (isInitializing) {
+    return (
+      <StudentLayout>
+        <div className="max-w-4xl mx-auto">
+          <Card variant="elevated">
+            <CardHeader>
+              <CardTitle>Loading your application progress</CardTitle>
+              <CardDescription>Please wait while we prepare your form.</CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </StudentLayout>
+    );
+  }
+
   return (
     <StudentLayout>
       <div className="max-w-4xl mx-auto">
+        {draftProgressPercent >= 10 && !isPaymentResumeOnly && (
+          <Card className="mb-6 border-primary/30 bg-primary/5">
+            <CardContent className="p-4 text-sm">
+              You already started this application. Progress restored at {draftProgressPercent}%.
+            </CardContent>
+          </Card>
+        )}
+
         {/* Progress Steps */}
         <div className="mb-8">
           <div className="flex items-center justify-between relative">
@@ -378,7 +632,7 @@ const ApplyPage = () => {
               {currentStep === 1 && 'Enter your personal information'}
               {currentStep === 2 && 'Upload required documents'}
               {currentStep === 3 && 'Select your preferred route'}
-              {currentStep === 4 && 'Complete payment'}
+              {currentStep === 4 && (isPaymentResumeOnly ? 'Complete your pending payment to continue' : 'Complete payment')}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -390,7 +644,7 @@ const ApplyPage = () => {
               <Button
                 variant="outline"
                 onClick={prevStep}
-                disabled={currentStep === 1}
+                disabled={currentStep === 1 || isPaymentResumeOnly}
               >
                 <ArrowLeft className="w-4 h-4 mr-2" />
                 Previous

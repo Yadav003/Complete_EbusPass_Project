@@ -42,9 +42,86 @@ const FARE_PER_KM = 2;
 const MONTHLY_DAYS = 30;
 const MAX_DISTANCE_KM = 80;
 
+const createDummyBusStands = (state: string, district: string): BusStandLocation[] =>
+  Array.from({ length: 10 }, (_, index) => {
+    const standNumber = index + 1;
+
+    return {
+      id: `dummy-stand-${standNumber}`,
+      name: `Stand ${standNumber}`,
+      state,
+      district,
+      note: standNumber <= 5 ? 'Start stand (dummy)' : 'End stand (dummy)',
+    };
+  });
+
+const DUMMY_ROUTES: Route[] = [
+  {
+    id: 'dummy-route-1',
+    name: 'Stand 1 to Stand 6',
+    source: 'Stand 1',
+    destination: 'Stand 6',
+    stops: ['Stand 2', 'Stand 3'],
+    distance: 18,
+    farePerKm: FARE_PER_KM,
+    totalFare: 18 * FARE_PER_KM,
+  },
+  {
+    id: 'dummy-route-2',
+    name: 'Stand 2 to Stand 7',
+    source: 'Stand 2',
+    destination: 'Stand 7',
+    stops: ['Stand 4', 'Stand 5'],
+    distance: 24,
+    farePerKm: FARE_PER_KM,
+    totalFare: 24 * FARE_PER_KM,
+  },
+  {
+    id: 'dummy-route-3',
+    name: 'Stand 3 to Stand 8',
+    source: 'Stand 3',
+    destination: 'Stand 8',
+    stops: ['Stand 5', 'Stand 6'],
+    distance: 32,
+    farePerKm: FARE_PER_KM,
+    totalFare: 32 * FARE_PER_KM,
+  },
+  {
+    id: 'dummy-route-4',
+    name: 'Stand 4 to Stand 9',
+    source: 'Stand 4',
+    destination: 'Stand 9',
+    stops: ['Stand 2', 'Stand 7'],
+    distance: 41,
+    farePerKm: FARE_PER_KM,
+    totalFare: 41 * FARE_PER_KM,
+  },
+  {
+    id: 'dummy-route-5',
+    name: 'Stand 5 to Stand 10',
+    source: 'Stand 5',
+    destination: 'Stand 10',
+    stops: ['Stand 1', 'Stand 9'],
+    distance: 55,
+    farePerKm: FARE_PER_KM,
+    totalFare: 55 * FARE_PER_KM,
+  },
+];
+
 const formatCurrency = (value: number) => value.toLocaleString('en-IN');
 
 const normalize = (value: string) => value.trim().toLowerCase();
+
+const isDummyStand = (stand: BusStandLocation) => stand.id.startsWith('dummy-stand-');
+
+const getDummyStandNumber = (stand: BusStandLocation) => {
+  const match = stand.id.match(/dummy-stand-(\d+)/);
+  if (!match) {
+    return null;
+  }
+
+  return Number(match[1]);
+};
 
 const getRouteScore = (route: Route, startStand: BusStandLocation, endStand: BusStandLocation) => {
   const startName = normalize(startStand.name);
@@ -460,14 +537,19 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
       try {
         setBusStandsLoading(true);
         const data = await locationService.getBusStands(selectedState, selectedDistrict);
+        const resolvedBusStands = data.length > 0 ? data : createDummyBusStands(selectedState, selectedDistrict);
 
         if (!cancelled) {
-          setBusStands(data);
+          setBusStands(resolvedBusStands);
+
+          if (data.length === 0) {
+            toast.info('Dummy bus stands are being used for now.');
+          }
         }
       } catch (error) {
         if (!cancelled) {
-          setBusStands([]);
-          toast.error(error instanceof Error ? error.message : 'Failed to load bus stands');
+          setBusStands(createDummyBusStands(selectedState, selectedDistrict));
+          toast.warning('Unable to load bus stands, so dummy data is being used.');
         }
       } finally {
         if (!cancelled) {
@@ -496,6 +578,13 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
     const search = normalize(startQuery);
 
     return busStands.filter(stand => {
+      if (isDummyStand(stand)) {
+        const standNumber = getDummyStandNumber(stand);
+        if (standNumber && standNumber > 5) {
+          return false;
+        }
+      }
+
       if (!search) return true;
 
       return [stand.name, stand.district, stand.state, stand.note ?? '']
@@ -510,6 +599,14 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
 
     return busStands.filter(stand => {
       if (stand.id === startStand?.id) return false;
+
+      if (isDummyStand(stand)) {
+        const standNumber = getDummyStandNumber(stand);
+        if (standNumber && standNumber <= 5) {
+          return false;
+        }
+      }
+
       if (!search) return true;
 
       return [stand.name, stand.district, stand.state, stand.note ?? '']
@@ -519,10 +616,19 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
     });
   }, [busStands, endQuery, startStand?.id]);
 
+  const effectiveRoutes = useMemo(() => {
+    if (busStands.length === 0) {
+      return routes;
+    }
+
+    const usesDummyStands = busStands.some(isDummyStand);
+    return usesDummyStands ? DUMMY_ROUTES : routes;
+  }, [busStands, routes]);
+
   const routeMatches = useMemo(() => {
     if (!startStand || !endStand) return [];
 
-    return routes
+    return effectiveRoutes
       .filter(route => route.distance <= MAX_DISTANCE_KM)
       .map(route => ({
         route,
@@ -531,7 +637,7 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
       }))
       .filter(match => match.score > 0)
       .sort((left, right) => right.score - left.score || left.route.distance - right.route.distance);
-  }, [routes, startStand, endStand]);
+  }, [effectiveRoutes, startStand, endStand]);
 
   const activeRoute = routeMatches[0]?.route ?? null;
   const selectedMonthlyFare = activeRoute ? activeRoute.distance * FARE_PER_KM  : 0;
@@ -642,7 +748,7 @@ const RouteSelection: React.FC<RouteSelectionProps> = ({ routes, selectedRoute, 
                 </div>
                 <div className="flex items-center justify-between gap-4">
                   <span className="text-muted-foreground">Bus stands</span>
-                  <span className="font-medium text-foreground">{busStandsLoading ? 'Loading...' : `${busStands.length} loaded`}</span>
+                  <span className="font-medium text-foreground">{busStandsLoading ? 'Loading...' : `${busStands.length} Bus Stands`}</span>
                 </div>
               </div>
             </CardContent>

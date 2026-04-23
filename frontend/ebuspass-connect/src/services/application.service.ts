@@ -134,6 +134,43 @@ export interface CreateApplicationRequest {
   };
 }
 
+export interface DraftProgressCompletedSteps {
+  basicDetails: boolean;
+  documents: boolean;
+  routeSelection: boolean;
+  payment: boolean;
+}
+
+export interface UserDraftProgress {
+  canCreateNewApplication: boolean;
+  hasActiveApplication: boolean;
+  activeApplication: AdminApplication | null;
+  latestApplication: AdminApplication | null;
+  progress: {
+    completedSteps: DraftProgressCompletedSteps;
+    completedCount: number;
+    totalSteps: number;
+    progressPercent: number;
+    resumeStep: 1 | 2 | 3 | 4 | null;
+  };
+  draft: {
+    basicDetails: SaveBasicDetailsPayload | null;
+    documents: {
+      completed: boolean;
+      aadhaarUrl: string;
+      collegeIdUrl: string;
+      photoUrl: string;
+    };
+    routeSelection: {
+      source: string;
+      destination: string;
+      distance: number;
+      fare: number;
+      routeId?: string;
+    } | null;
+  };
+}
+
 export const applicationService = {
   saveBasicDetails: async (personalDetails: SaveBasicDetailsPayload) => {
     const response = await apiClient.post(ENDPOINTS.APPLICATIONS.BASIC_DETAILS, {
@@ -181,6 +218,19 @@ export const applicationService = {
     );
 
     return response.data.application;
+  },
+
+  getUserApplications: async (): Promise<AdminApplication[]> => {
+    const response = await apiClient.get<{ applications: AdminApplication[] }>(
+      ENDPOINTS.APPLICATIONS.USER_APPLICATIONS,
+    );
+
+    return response.data.applications ?? [];
+  },
+
+  getDraftProgress: async (): Promise<UserDraftProgress> => {
+    const response = await apiClient.get<UserDraftProgress>(ENDPOINTS.APPLICATIONS.DRAFT_PROGRESS);
+    return response.data;
   },
 
   getAllApplicationsForAdmin: async (params?: {

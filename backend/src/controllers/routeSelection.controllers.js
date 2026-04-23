@@ -1,7 +1,10 @@
 import mongoose from "mongoose";
 import { RouteSelection } from "../modals/routeSelection.modal.js";
+import { Application } from "../modals/application.modal.js";
 import { asyncHandler } from "../utils/asynhandler.js";
 import { ApiError } from "../utils/ApiError.js";
+
+const ACTIVE_APPLICATION_STATUSES = ["pending", "pay_pending", "under_review", "approved"];
 
 export const validateRouteSelection = (route) => {
   if (!route) {
@@ -40,6 +43,18 @@ const saveRouteSelection = asyncHandler(async (req, res) => {
 
   if (!userId) {
     throw new ApiError(401, "User authentication required");
+  }
+
+  const activeApplication = await Application.findOne({
+    userId,
+    status: { $in: ACTIVE_APPLICATION_STATUSES },
+  });
+
+  if (activeApplication) {
+    throw new ApiError(
+      409,
+      "You already have an active application. You can apply again only after rejection"
+    );
   }
 
   const routePayload = req.body.route ?? req.body;

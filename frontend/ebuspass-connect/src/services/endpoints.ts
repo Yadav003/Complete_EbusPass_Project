@@ -26,6 +26,7 @@ export const ENDPOINTS = {
     ROUTE_SELECTION: `${API_V1}/applications/route-selection`,
     CREATE: `${API_V1}/applications/create`,
     USER_APPLICATIONS: `${API_V1}/applications/my-applications`,
+    DRAFT_PROGRESS: `${API_V1}/applications/draft-progress`,
     GET_ALL: `${API_V1}/applications`,
     GET_BY_ID: (id: string) => `${API_V1}/applications/${id}`,
     UPDATE: (id: string) => `${API_V1}/applications/${id}`,

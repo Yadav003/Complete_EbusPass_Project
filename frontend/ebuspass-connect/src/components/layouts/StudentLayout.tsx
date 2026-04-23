@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Bus, LayoutDashboard, FileText, LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface StudentLayoutProps {
@@ -11,6 +12,16 @@ interface StudentLayoutProps {
 const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
   const location = useLocation();
   const { user, logout } = useAuth();
+
+  const applyBlockUntil = sessionStorage.getItem('ebuspass_apply_block_until');
+  const isApplyBlocked = applyBlockUntil ? new Date() < new Date(applyBlockUntil) : false;
+  const applyBlockedDateLabel = applyBlockUntil
+    ? new Date(applyBlockUntil).toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+    : '';
 
   const handleLogout = async () => {
     await logout();
@@ -35,15 +46,35 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
 
           <nav className="hidden md:flex items-center gap-1">
             {navItems.map(item => (
-              <Link key={item.path} to={item.path}>
-                <Button
-                  variant={location.pathname === item.path ? 'secondary' : 'ghost'}
-                  className="gap-2"
-                >
-                  <item.icon className="w-4 h-4" />
-                  {item.label}
-                </Button>
-              </Link>
+              item.path === '/apply' && isApplyBlocked ? (
+                <Tooltip key={item.path}>
+                  <TooltipTrigger asChild>
+                    <span>
+                      <Button
+                        variant="ghost"
+                        className="gap-2"
+                        disabled
+                      >
+                        <item.icon className="w-4 h-4" />
+                        {item.label}
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    Apply opens after pass expiry ({applyBlockedDateLabel}).
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Link key={item.path} to={item.path}>
+                  <Button
+                    variant={location.pathname === item.path ? 'secondary' : 'ghost'}
+                    className="gap-2"
+                  >
+                    <item.icon className="w-4 h-4" />
+                    {item.label}
+                  </Button>
+                </Link>
+              )
             ))}
           </nav>
 
@@ -65,16 +96,37 @@ const StudentLayout: React.FC<StudentLayoutProps> = ({ children }) => {
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card border-t border-border md:hidden">
         <div className="flex justify-around py-2">
           {navItems.map(item => (
-            <Link key={item.path} to={item.path} className="flex-1">
-              <Button
-                variant={location.pathname === item.path ? 'default' : 'ghost'}
-                className="w-full flex-col h-auto py-2 gap-1"
-                size="sm"
-              >
-                <item.icon className="w-5 h-5" />
-                <span className="text-xs">{item.label}</span>
-              </Button>
-            </Link>
+            item.path === '/apply' && isApplyBlocked ? (
+              <Tooltip key={item.path}>
+                <TooltipTrigger asChild>
+                  <span className="flex-1">
+                    <Button
+                      variant="ghost"
+                      className="w-full flex-col h-auto py-2 gap-1"
+                      size="sm"
+                      disabled
+                    >
+                      <item.icon className="w-5 h-5" />
+                      <span className="text-xs">{item.label}</span>
+                    </Button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Apply opens after pass expiry ({applyBlockedDateLabel}).
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <Link key={item.path} to={item.path} className="flex-1">
+                <Button
+                  variant={location.pathname === item.path ? 'default' : 'ghost'}
+                  className="w-full flex-col h-auto py-2 gap-1"
+                  size="sm"
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span className="text-xs">{item.label}</span>
+                </Button>
+              </Link>
+            )
           ))}
           <Button
             variant="ghost"

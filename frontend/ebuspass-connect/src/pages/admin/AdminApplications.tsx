@@ -370,17 +370,23 @@ const AdminApplications = () => {
                 <div>
                   <h4 className="font-semibold mb-3">Documents</h4>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm">
+                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
                       <div className="font-medium">Aadhaar</div>
-                      <div className="text-xs text-muted-foreground">{selectedApp.documents.aadhaar}</div>
+                      <div className="text-xs text-muted-foreground break-all">
+                        {selectedApp.documents.aadhaar}
+                      </div>
                     </div>
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm">
+                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
                       <div className="font-medium">College ID</div>
-                      <div className="text-xs text-muted-foreground">{selectedApp.documents.collegeId}</div>
+                      <div className="text-xs text-muted-foreground break-all">
+                        {selectedApp.documents.collegeId}
+                      </div>
                     </div>
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm">
+                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
                       <div className="font-medium">Photo</div>
-                      <div className="text-xs text-muted-foreground">{selectedApp.documents.photo}</div>
+                      <div className="text-xs text-muted-foreground break-all">
+                        {selectedApp.documents.photo}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -8,6 +8,7 @@ import getUserApplications from "../controllers/application/getUserApplications.
 import { getApplicationById, getAllApplications } from "../controllers/application/getAllApplications.controller.js";
 import {
 	createApplication,
+	getUserDraftProgress,
 	updateApplication,
 	completeApplicationPayment,
 	deleteApplication,
@@ -30,6 +31,7 @@ router.route("/documents-upload").post(
 router.route("/route-selection").post(verifyJWT, saveRouteSelection);
 router.route("/create").post(verifyJWT, createApplication);
 router.route("/my-applications").get(verifyJWT, getUserApplications);
+router.route("/draft-progress").get(verifyJWT, getUserDraftProgress);
 router.route("/:applicationId").get(verifyJWT, getApplicationById);
 router.route("/:applicationId").put(verifyJWT, updateApplication);
 router.route("/:applicationId/payment").put(verifyJWT, completeApplicationPayment);
