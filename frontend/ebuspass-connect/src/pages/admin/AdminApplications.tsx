@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Eye, CheckCircle, XCircle, Search, Database } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, Search, Database, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -369,25 +369,29 @@ const AdminApplications = () => {
 
                 <div>
                   <h4 className="font-semibold mb-3">Documents</h4>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
-                      <div className="font-medium">Aadhaar</div>
-                      <div className="text-xs text-muted-foreground break-all">
-                        {selectedApp.documents.aadhaar}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    {[
+                      { label: 'Aadhaar', url: selectedApp.documents.aadhaar },
+                      { label: 'College ID', url: selectedApp.documents.collegeId },
+                      { label: 'Photo', url: selectedApp.documents.photo },
+                    ].map((document) => (
+                      <div key={document.label} className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden space-y-2">
+                        <div className="font-medium">{document.label}</div>
+                        {document.url ? (
+                          <>
+                            <Button asChild size="sm" variant="outline" className="w-full">
+                              <a href={document.url} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-4 h-4" />
+                                View Document
+                              </a>
+                            </Button>
+                            <div className="text-xs text-muted-foreground break-all">{document.url}</div>
+                          </>
+                        ) : (
+                          <div className="text-xs text-muted-foreground">Not uploaded</div>
+                        )}
                       </div>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
-                      <div className="font-medium">College ID</div>
-                      <div className="text-xs text-muted-foreground break-all">
-                        {selectedApp.documents.collegeId}
-                      </div>
-                    </div>
-                    <div className="p-3 bg-muted rounded-lg text-center text-sm overflow-hidden">
-                      <div className="font-medium">Photo</div>
-                      <div className="text-xs text-muted-foreground break-all">
-                        {selectedApp.documents.photo}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </div>
 

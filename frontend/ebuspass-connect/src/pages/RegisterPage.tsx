@@ -174,7 +174,7 @@ const RegisterPage = () => {
               <div className="flex items-start gap-2">
                 <input type="checkbox" id="terms" className="mt-1 rounded border-border" required />
                 <label htmlFor="terms" className="text-sm text-muted-foreground">
-                  I agree to the <a href="#" className="text-primary hover:underline">Terms of Service</a> and <a href="#" className="text-primary hover:underline">Privacy Policy</a>
+                  I agree to the <Link to="/terms-of-service" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy-policy" className="text-primary hover:underline">Privacy Policy</Link>
                 </label>
               </div>
 

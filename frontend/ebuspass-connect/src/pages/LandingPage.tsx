@@ -57,9 +57,11 @@ const LandingPage = () => {
             <span className="font-display font-bold text-xl text-foreground">eBusPass</span>
           </Link>
           <nav className="hidden md:flex items-center gap-6">
+            <Link to="/about" className="text-muted-foreground hover:text-foreground transition-colors">About</Link>
             <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">How it Works</a>
-            <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</a>
+            <Link to="/faq" className="text-muted-foreground hover:text-foreground transition-colors">FAQ</Link>
+            <Link to="/contact" className="text-muted-foreground hover:text-foreground transition-colors">Contact</Link>
           </nav>
           <div className="flex items-center gap-3">
             {isAuthenticated ? (
@@ -317,9 +319,13 @@ const LandingPage = () => {
             <div>
               <h4 className="font-semibold mb-4">Quick Links</h4>
               <ul className="space-y-2 text-sm text-background/70">
+                {/* <li><Link to="/about" className="hover:text-background transition-colors">About</Link></li> */}
                 <li><Link to="/login" className="hover:text-background transition-colors">Login</Link></li>
                 <li><Link to="/register" className="hover:text-background transition-colors">Register</Link></li>
-                <li><a href="#" className="hover:text-background transition-colors">FAQs</a></li>
+                {/* <li><Link to="/faq" className="hover:text-background transition-colors">FAQs</Link></li>
+                <li><Link to="/contact" className="hover:text-background transition-colors">Contact</Link></li> */}
+                <li><Link to="/terms-of-service" className="hover:text-background transition-colors">Terms of Service</Link></li>
+                <li><Link to="/privacy-policy" className="hover:text-background transition-colors">Privacy Policy</Link></li>
               </ul>
             </div>
             <div>
