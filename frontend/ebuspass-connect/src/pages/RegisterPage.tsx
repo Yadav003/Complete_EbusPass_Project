@@ -23,7 +23,7 @@ const RegisterPage = () => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setFormData({ ...formData,[e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,6 +41,11 @@ const RegisterPage = () => {
 
     if (formData.password.length < 6) {
       toast.error('Password must be at least 6 characters');
+      return;
+    }
+
+    if (!/^\d{10}$/.test(formData.mobile)) {
+      toast.error('Mobile number must be exactly 10 digits');
       return;
     }
     
@@ -127,6 +132,10 @@ const RegisterPage = () => {
                     placeholder="Enter your mobile number"
                     value={formData.mobile}
                     onChange={handleChange}
+                    inputMode="numeric"
+                    pattern="[0-9]{10}"
+                    title="Mobile number must be exactly 10 digits"
+                    maxLength={10}
                     className="pl-10"
                   />
                 </div>

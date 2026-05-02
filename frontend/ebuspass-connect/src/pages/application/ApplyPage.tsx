@@ -308,6 +308,13 @@ const ApplyPage = () => {
           toast.error('Please fill in all personal details');
           return false;
         }
+
+        const today = new Date().toISOString().slice(0, 10);
+        if (dob > today) {
+          toast.error('Date of birth cannot be a future date');
+          return false;
+        }
+
         return true;
       }
       case 2:

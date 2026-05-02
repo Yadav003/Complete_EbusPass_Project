@@ -12,6 +12,21 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface ForgotPasswordPayload {
+  email: string;
+}
+
+export interface ForgotPasswordResponse {
+  message: string;
+}
+
+export interface ResetPasswordPayload {
+  email: string;
+  token: string;
+  password: string;
+  confirmPassword: string;
+}
+
 export interface AuthUser {
   _id: string;
   fullname: string;
@@ -115,6 +130,30 @@ export const authService = {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || "Token refresh failed");
+    return data;
+  },
+
+  forgotPassword: async (payload: ForgotPasswordPayload): Promise<ForgotPasswordResponse> => {
+    const response = await fetch(ENDPOINTS.AUTH.FORGOT_PASSWORD, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to process forgot password request");
+    return data as ForgotPasswordResponse;
+  },
+
+  resetPassword: async (payload: ResetPasswordPayload): Promise<{ message: string }> => {
+    const response = await fetch(ENDPOINTS.AUTH.RESET_PASSWORD, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.message || "Failed to reset password");
     return data;
   },
 };

@@ -29,6 +29,8 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
   isLoadingColleges,
   onPersonalChange,
 }) => {
+  const today = new Date().toISOString().slice(0, 10);
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
@@ -55,6 +57,7 @@ const BasicDetails: React.FC<BasicDetailsProps> = ({
             type="date"
             value={personalDetails.dob}
             onChange={onPersonalChange}
+            max={today}
           />
         </div>
         <div className="space-y-2">

@@ -8,15 +8,21 @@ const registerUser = asyncHandler(async (req, res) => {
   // Validate required fields
   if (
     [fullname, email, mobile, password].some(
-      (field) => !field || field.trim() === ""
+      (field) => field === undefined || field === null || String(field).trim() === ""
     )
   ) {
     throw new ApiError(400, "All fields are required");
   }
 
+  const normalizedMobile = String(mobile).trim();
+
+  if (!/^\d{10}$/.test(normalizedMobile)) {
+    throw new ApiError(400, "Mobile number must be exactly 10 digits");
+  }
+
   // Check if user already exists
   const existingUser = await User.findOne({
-    $or: [{ email: email.toLowerCase() }, { mobile }],
+    $or: [{ email: email.toLowerCase() }, { mobile: normalizedMobile }],
   });
 
   if (existingUser) {
@@ -27,7 +33,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullname: fullname.trim(),
     email: email.toLowerCase().trim(),
-    mobile: mobile.trim(),
+    mobile: normalizedMobile,
     role: "student",
     password,
   });

@@ -4,7 +4,15 @@
 export { BASE_URL, ENDPOINTS } from "./endpoints";
 
 export { authService } from "./auth.service";
-export type { AuthUser, LoginPayload, RegisterPayload, AuthResponse } from "./auth.service";
+export type {
+	AuthUser,
+	LoginPayload,
+	RegisterPayload,
+	AuthResponse,
+	ForgotPasswordPayload,
+	ForgotPasswordResponse,
+	ResetPasswordPayload,
+} from "./auth.service";
 
 export { applicationService } from "./application.service";
 export type { Application, ApplicationStatus, CreateApplicationPayload, CreateApplicationRequest } from "./application.service";

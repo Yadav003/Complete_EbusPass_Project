@@ -32,6 +32,12 @@ const userSchema = new Schema(
       type: String,
       required: true,
     },
+    resetPasswordTokenHash: {
+      type: String,
+    },
+    resetPasswordExpiresAt: {
+      type: Date,
+    },
     refreshToken: {
       type: String,
     },

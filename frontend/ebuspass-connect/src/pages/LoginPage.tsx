@@ -99,9 +99,9 @@ const LoginPage = () => {
               <div className="flex items-center justify-between text-sm">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" className="rounded border-border" />
-                  <span className="text-muted-foreground">Remember me</span>
+                  {/* <span className="text-muted-foreground">Remember me</span> */}
                 </label>
-                <a href="#" className="text-primary hover:underline">Forgot password?</a>
+                <Link to="/forgot-password" className="text-primary hover:underline">Forgot password?</Link>
               </div>
 
               <Button type="submit" className="w-full" size="lg" disabled={isLoading}>

@@ -12,6 +12,8 @@ export const ENDPOINTS = {
     LOGOUT: `${API_V1}/users/logout`,
     REFRESH_TOKEN: `${API_V1}/users/refresh-token`,
     ADMIN_LOGIN: `${API_V1}/users/admin/login`,
+    FORGOT_PASSWORD: `${API_V1}/users/forgot-password`,
+    RESET_PASSWORD: `${API_V1}/users/reset-password`,
   },
 
   

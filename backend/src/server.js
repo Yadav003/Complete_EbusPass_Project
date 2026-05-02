@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import path from "path";
 import connectDB from "./db/db-config.js";
 
 // load environment variables
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const { default: app } = await import("./app.js");
 
