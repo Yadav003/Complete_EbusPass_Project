@@ -332,7 +332,7 @@ const LandingPage = () => {
               <h4 className="font-semibold mb-4">Support</h4>
               <ul className="space-y-2 text-sm text-background/70">
                 <li>Helpline: 1800-XXX-XXXX</li>
-                <li>Email: support@ebuspass.gov.in</li>
+                <li>Email: ebuspass.support@gmail.com</li>
                 <li>Mon-Sat: 9:00 AM - 6:00 PM</li>
               </ul>
             </div>

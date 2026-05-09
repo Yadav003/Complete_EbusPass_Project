@@ -81,7 +81,7 @@ const ContactPage = () => {
               <Mail className="w-5 h-5" />
             </div>
             <h3 className="font-display font-bold text-lg mb-1">Email</h3>
-            <p className="text-muted-foreground text-sm">support@ebuspass.gov.in</p>
+            <p className="text-muted-foreground text-sm">ebuspass.support@gmail.com</p>
             <p className="text-muted-foreground text-sm mt-1">For non-urgent and document-related queries</p>
           </CardContent>
         </Card>

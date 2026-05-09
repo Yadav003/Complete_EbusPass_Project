@@ -149,7 +149,7 @@ const PublicSiteLayout = ({
                 </li>
                 <li className="flex items-center gap-2">
                   <Mail className="w-4 h-4" />
-                  support@ebuspass.gov.in
+                  ebuspass.support@gmail.com
                 </li>
                 <li>Mon-Sat: 9:00 AM - 6:00 PM</li>
               </ul>
