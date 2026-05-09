@@ -97,10 +97,10 @@ const LoginPage = () => {
               </div>
 
               <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2">
+                {/* <label className="flex items-center gap-2">
                   <input type="checkbox" className="rounded border-border" />
-                  {/* <span className="text-muted-foreground">Remember me</span> */}
-                </label>
+                  <span className="text-muted-foreground">Remember me</span>
+                </label> */}
                 <Link to="/forgot-password" className="text-primary hover:underline">Forgot password?</Link>
               </div>
 
